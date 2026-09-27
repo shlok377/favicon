@@ -1,0 +1,24 @@
+{
+  "name": "favicon-generator",
+  "version": "1.0.0",
+  "description": "Developer-first Favicon & Social Asset Generator for web projects.",
+  "scripts": {
+    "start": "./start.sh",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 1947 --reload",
+    "build:frontend": "cd frontend && npm run build",
+    "test:backend": "cd backend && .venv/bin/pytest",
+    "test": "npm run test:backend && npm run build:frontend"
+  },
+  "keywords": [
+    "favicon",
+    "favicon-generator",
+    "icons",
+    "pwa",
+    "apple-touch-icon",
+    "opengraph",
+    "whatsapp"
+  ],
+  "author": "shlok377",
+  "license": "MIT"
+}
