@@ -6,7 +6,6 @@ import { MetadataPanel, type MetadataState } from './components/MetadataPanel';
 import { PresetSelector, type PresetType, type CustomCategoriesState } from './components/PresetSelector';
 import { LiveMockups } from './components/LiveMockups';
 import { EmbedCodeViewer } from './components/EmbedCodeViewer';
-import { AssetSummaryGrid } from './components/AssetSummaryGrid';
 
 export default function App() {
   // Image Upload State
@@ -149,9 +148,6 @@ export default function App() {
 
         {/* 5. Embed Snippets */}
         <EmbedCodeViewer metadata={metadata} preset={preset} />
-
-        {/* 6. Bundle Summary */}
-        <AssetSummaryGrid preset={preset} customCategories={customCategories} />
 
         {/* Bottom Download Bar */}
         <div className="sticky bottom-4 z-20">
