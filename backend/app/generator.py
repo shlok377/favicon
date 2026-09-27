@@ -7,6 +7,11 @@ import zipfile
 from typing import Dict, Optional, Tuple
 from PIL import Image, ImageColor, ImageFilter, ImageOps
 
+try:
+    import resvg_py
+except ImportError:
+    resvg_py = None
+
 from app.models import CategorySelection, FaviconMetadata, PresetMode
 
 
@@ -19,8 +24,33 @@ def hex_to_rgb(hex_color: str, default: Tuple[int, int, int] = (255, 255, 255)) 
 
 
 def load_image(image_bytes: bytes) -> Image.Image:
-    """Load image from bytes and ensure RGBA mode."""
-    img = Image.open(io.BytesIO(image_bytes))
+    """
+    Load image from bytes and ensure RGBA mode.
+    Supports PNG, JPG, WebP, and SVG vector formats.
+    """
+    stripped = image_bytes.strip()
+    is_svg = stripped.startswith(b"<svg") or stripped.startswith(b"<?xml") or b"<svg" in stripped[:256]
+    
+    if is_svg and resvg_py is not None:
+        try:
+            png_bytes = resvg_py.svg_to_bytes(image_bytes.decode("utf-8", errors="ignore"))
+            img = Image.open(io.BytesIO(png_bytes))
+            return img.convert("RGBA")
+        except Exception:
+            pass  # Fall through to Image.open
+            
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+    except Exception as err:
+        if resvg_py is not None:
+            try:
+                png_bytes = resvg_py.svg_to_bytes(image_bytes.decode("utf-8", errors="ignore"))
+                img = Image.open(io.BytesIO(png_bytes))
+                return img.convert("RGBA")
+            except Exception:
+                pass
+        raise err
+
     if img.mode != "RGBA":
         img = img.convert("RGBA")
     return img
@@ -52,15 +82,6 @@ def trim_transparent_borders(img: Image.Image, padding_pct: float = 0.05) -> Ima
     paste_y = (canvas_size - cropped.height) // 2
     square_canvas.paste(cropped, (paste_x, paste_y), cropped)
     return square_canvas
-
-
-def clean_alpha_fringing(img: Image.Image) -> Image.Image:
-    """
-    Clean up RGB values of transparent/semi-transparent pixels to avoid dark halos during resampling.
-    """
-    if img.mode != "RGBA":
-        img = img.convert("RGBA")
-    return img
 
 
 def adaptive_sharpen_icon(img: Image.Image, target_size: int) -> Image.Image:
@@ -183,7 +204,6 @@ def generate_png(image: Image.Image, size: Tuple[int, int], bg_color: Optional[s
 def create_social_card_fallback(
     square_bytes: bytes,
     bg_color: str = "#121212",
-    app_name: str = "Web App",
 ) -> bytes:
     """
     Generate a 1200x630 social share card by centering the square logo
@@ -211,29 +231,46 @@ def create_social_card_fallback(
 
 def generate_monochrome_svg(image_bytes: bytes) -> str:
     """
-    Generate a monochrome silhouette SVG mask (for Safari pinned tab).
-    Uses high-contrast alpha thresholding.
+    Generate an optimized monochrome silhouette SVG mask (for Safari pinned tab).
+    Handles both transparent logos (via alpha thresholding) and opaque images (via luminance thresholding).
+    Combines horizontal pixel runs into clean SVG rects.
     """
     img = load_image(image_bytes)
     # Downscale for crisp vector silhouette extraction
     small = img.resize((64, 64), Image.Resampling.LANCZOS)
     
-    # Extract alpha mask or convert RGB luminance to mask
     alpha = small.split()[-1]
+    extrema = alpha.getextrema()
+    is_opaque = (extrema[0] >= 250)
     
-    # Build simple clean SVG with path/rects or embedded SVG mask
+    if is_opaque:
+        gray = small.convert("L")
+        pixels = gray.load()
+        corner_avg = (pixels[0, 0] + pixels[63, 0] + pixels[0, 63] + pixels[63, 63]) / 4.0
+        is_foreground = lambda x, y: (pixels[x, y] < 128) if corner_avg >= 128 else (pixels[x, y] >= 128)
+    else:
+        alpha_pixels = alpha.load()
+        is_foreground = lambda x, y: alpha_pixels[x, y] > 128
+
     svg_lines = [
         '<?xml version="1.0" encoding="utf-8"?>',
         '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">',
     ]
-    
-    # Walk pixels and render pixel grid / solid silhouette
-    pixels = alpha.load()
+
     for y in range(64):
+        run_start = None
         for x in range(64):
-            if pixels[x, y] > 128:  # threshold
-                svg_lines.append(f'  <rect x="{x}" y="{y}" width="1" height="1" fill="#000000" />')
-                
+            active = is_foreground(x, y)
+            if active and run_start is None:
+                run_start = x
+            elif not active and run_start is not None:
+                width = x - run_start
+                svg_lines.append(f'  <rect x="{run_start}" y="{y}" width="{width}" height="1" fill="#000000" />')
+                run_start = None
+        if run_start is not None:
+            width = 64 - run_start
+            svg_lines.append(f'  <rect x="{run_start}" y="{y}" width="{width}" height="1" fill="#000000" />')
+
     svg_lines.append("</svg>")
     return "\n".join(svg_lines)
 
@@ -280,7 +317,6 @@ def generate_browserconfig(metadata: FaviconMetadata) -> str:
   <msapplication>
     <tile>
       <square70x70logo src="/mstile-70x70.png"/>
-      <square144x144logo src="/mstile-144x144.png"/>
       <square150x150logo src="/mstile-150x150.png"/>
       <wide310x150logo src="/mstile-310x150.png"/>
       <square310x310logo src="/mstile-310x310.png"/>
@@ -291,104 +327,176 @@ def generate_browserconfig(metadata: FaviconMetadata) -> str:
     return xml
 
 
-def generate_html_snippet(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
-    """Generate ready-to-copy HTML <head> tags including standard & legacy compatibility."""
-    lines = [
-        "<!-- Favicon & Browser Icons -->",
-        '<link rel="icon" type="image/x-icon" href="/favicon.ico">',
-        '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">',
-        '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">',
-        '<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">',
-        '<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">',
-        '<link rel="icon" type="image/png" sizes="128x128" href="/favicon-128.png">',
-        '<link rel="icon" type="image/png" sizes="196x196" href="/favicon-196x196.png">',
-        "",
-        "<!-- Apple Touch Icons (iOS) -->",
-        '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">',
-        '<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">',
-        '<link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">',
-        '<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">',
-        '<link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">',
-        '<link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">',
-        '<link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">',
-        '<link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">',
-        '<link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">',
-    ]
+def resolve_included_categories(
+    preset: PresetMode = PresetMode.STANDARD,
+    custom_categories: Optional[CategorySelection] = None,
+) -> Tuple[bool, bool, bool, bool, bool]:
+    """Resolve which icon categories are active given preset and custom selections."""
+    include_standard = True
+    include_apple = True
+    include_android = True
+    include_windows = True
+    include_social = True
 
-    if preset != PresetMode.MINIMAL:
+    if preset == PresetMode.MINIMAL:
+        include_android = False
+        include_windows = False
+        include_social = False
+    elif preset == PresetMode.CUSTOM and custom_categories:
+        include_standard = custom_categories.standard_favicons
+        include_apple = custom_categories.apple_ios
+        include_android = custom_categories.android_pwa
+        include_windows = custom_categories.windows_tiles
+        include_social = custom_categories.social_cards
+
+    return include_standard, include_apple, include_android, include_windows, include_social
+
+
+def generate_html_snippet(
+    metadata: FaviconMetadata,
+    preset: PresetMode = PresetMode.STANDARD,
+    custom_categories: Optional[CategorySelection] = None,
+) -> str:
+    """Generate ready-to-copy HTML <head> tags matching selected categories."""
+    include_standard, include_apple, include_android, include_windows, include_social = resolve_included_categories(
+        preset, custom_categories
+    )
+
+    lines = []
+
+    if include_standard:
         lines.extend([
+            "<!-- Favicon & Browser Icons -->",
+            '<link rel="icon" type="image/x-icon" href="/favicon.ico">',
+            '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">',
+            '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">',
+            '<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">',
+            '<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">',
+            '<link rel="icon" type="image/png" sizes="128x128" href="/favicon-128.png">',
+            '<link rel="icon" type="image/png" sizes="196x196" href="/favicon-196x196.png">',
+        ])
+
+    if include_apple:
+        if lines:
+            lines.append("")
+        lines.extend([
+            "<!-- Apple Touch Icons (iOS) -->",
+            '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">',
+            '<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">',
+            '<link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">',
+            '<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">',
+            '<link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">',
+            '<link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">',
+            '<link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">',
+            '<link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">',
+            '<link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">',
             f'<link rel="mask-icon" href="/safari-pinned-tab.svg" color="{metadata.theme_color}">',
+        ])
+
+    if include_android:
+        if lines:
+            lines.append("")
+        lines.extend([
+            "<!-- Android & PWA Manifest -->",
             '<link rel="manifest" href="/site.webmanifest">',
             f'<meta name="theme-color" content="{metadata.theme_color}">',
+        ])
+
+    if include_windows:
+        if lines:
+            lines.append("")
+        lines.extend([
+            "<!-- Windows Microsoft Tiles -->",
             f'<meta name="msapplication-TileColor" content="{metadata.theme_color}">',
             '<meta name="msapplication-TileImage" content="/mstile-144x144.png">',
             '<meta name="msapplication-config" content="/browserconfig.xml">',
-            "",
+        ])
+
+    if include_social:
+        if lines:
+            lines.append("")
+        clean_url = metadata.site_url.rstrip("/")
+        domain = clean_url.replace("https://", "").replace("http://", "")
+        lines.extend([
             "<!-- Open Graph / Facebook / WhatsApp Share Cards -->",
             '<meta property="og:type" content="website">',
             f'<meta property="og:url" content="{metadata.site_url}">',
             f'<meta property="og:title" content="{metadata.app_name}">',
             f'<meta property="og:description" content="{metadata.description}">',
-            f'<meta property="og:image" content="{metadata.site_url.rstrip("/")}/og-image.png">',
+            f'<meta property="og:image" content="{clean_url}/og-image.png">',
             "",
             "<!-- Twitter Card -->",
             '<meta name="twitter:card" content="summary_large_image">',
-            f'<meta property="twitter:domain" content="{metadata.site_url.replace("https://", "").replace("http://", "").rstrip("/")}">',
+            f'<meta property="twitter:domain" content="{domain}">',
             f'<meta property="twitter:url" content="{metadata.site_url}">',
             f'<meta name="twitter:title" content="{metadata.app_name}">',
             f'<meta name="twitter:description" content="{metadata.description}">',
-            f'<meta name="twitter:image" content="{metadata.site_url.rstrip("/")}/twitter-image.png">',
+            f'<meta name="twitter:image" content="{clean_url}/twitter-image.png">',
         ])
 
     return "\n".join(lines)
 
 
-def generate_head_tags_html(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+def generate_head_tags_html(
+    metadata: FaviconMetadata,
+    preset: PresetMode = PresetMode.STANDARD,
+    custom_categories: Optional[CategorySelection] = None,
+) -> str:
     """Generate ready-to-copy HTML <head> tags."""
-    return generate_html_snippet(metadata, preset)
+    return generate_html_snippet(metadata, preset, custom_categories)
 
 
-def generate_nextjs_snippet(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+def generate_nextjs_snippet(
+    metadata: FaviconMetadata,
+    preset: PresetMode = PresetMode.STANDARD,
+    custom_categories: Optional[CategorySelection] = None,
+) -> str:
     """Generate Next.js App Router metadata configuration."""
+    include_standard, include_apple, include_android, include_windows, include_social = resolve_included_categories(
+        preset, custom_categories
+    )
     clean_url = metadata.site_url.rstrip("/")
-    return f"""// app/layout.tsx (Next.js App Router)
-import type {{ Metadata }} from 'next';
 
-export const metadata: Metadata = {{
-  title: '{metadata.app_name}',
-  description: '{metadata.description}',
-  metadataBase: new URL('{clean_url}'),
-  icons: {{
-    icon: [
-      {{ url: '/favicon.ico' }},
-      {{ url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' }},
-      {{ url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }},
-      {{ url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' }},
-      {{ url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }},
-      {{ url: '/favicon-128.png', sizes: '128x128', type: 'image/png' }},
-      {{ url: '/favicon-196x196.png', sizes: '196x196', type: 'image/png' }},
-    ],
-    apple: [
-      {{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-152x152.png', sizes: '152x152', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-144x144.png', sizes: '144x144', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-120x120.png', sizes: '120x120', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-114x114.png', sizes: '114x114', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-76x76.png', sizes: '76x76', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-72x72.png', sizes: '72x72', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-60x60.png', sizes: '60x60', type: 'image/png' }},
-      {{ url: '/apple-touch-icon-57x57.png', sizes: '57x57', type: 'image/png' }},
-    ],
-    other: [
-      {{
-        rel: 'mask-icon',
-        url: '/safari-pinned-tab.svg',
-        color: '{metadata.theme_color}',
-      }},
-    ],
-  }},
-  manifest: '/site.webmanifest',
-  openGraph: {{
+    icon_entries = []
+    if include_standard:
+        icon_entries.extend([
+            "{ url: '/favicon.ico' }",
+            "{ url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' }",
+            "{ url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }",
+            "{ url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' }",
+            "{ url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }",
+            "{ url: '/favicon-128.png', sizes: '128x128', type: 'image/png' }",
+            "{ url: '/favicon-196x196.png', sizes: '196x196', type: 'image/png' }",
+        ])
+
+    apple_entries = []
+    if include_apple:
+        apple_entries.extend([
+            "{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-152x152.png', sizes: '152x152', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-144x144.png', sizes: '144x144', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-120x120.png', sizes: '120x120', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-114x114.png', sizes: '114x114', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-76x76.png', sizes: '76x76', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-72x72.png', sizes: '72x72', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-60x60.png', sizes: '60x60', type: 'image/png' }",
+            "{ url: '/apple-touch-icon-57x57.png', sizes: '57x57', type: 'image/png' }",
+        ])
+
+    icons_body = []
+    if icon_entries:
+        icons_body.append("    icon: [\n" + ",\n".join(f"      {e}" for e in icon_entries) + ",\n    ],")
+    if apple_entries:
+        icons_body.append("    apple: [\n" + ",\n".join(f"      {e}" for e in apple_entries) + ",\n    ],")
+    if include_apple:
+        icons_body.append(f"    other: [\n      {{\n        rel: 'mask-icon',\n        url: '/safari-pinned-tab.svg',\n        color: '{metadata.theme_color}',\n      }},\n    ],")
+
+    icons_code = ("  icons: {\n" + "\n".join(icons_body) + "\n  },\n") if icons_body else ""
+    manifest_code = "  manifest: '/site.webmanifest',\n" if include_android else ""
+
+    og_code = ""
+    if include_social:
+        og_code = f"""  openGraph: {{
     title: '{metadata.app_name}',
     description: '{metadata.description}',
     url: '{clean_url}',
@@ -409,12 +517,25 @@ export const metadata: Metadata = {{
     description: '{metadata.description}',
     images: ['/twitter-image.png'],
   }},
-}};"""
+"""
+
+    return f"""// app/layout.tsx (Next.js App Router)
+import type {{ Metadata }} from 'next';
+
+export const metadata: Metadata = {{
+  title: '{metadata.app_name}',
+  description: '{metadata.description}',
+  metadataBase: new URL('{clean_url}'),
+{icons_code}{manifest_code}{og_code}}};"""
 
 
-def generate_vite_snippet(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+def generate_vite_snippet(
+    metadata: FaviconMetadata,
+    preset: PresetMode = PresetMode.STANDARD,
+    custom_categories: Optional[CategorySelection] = None,
+) -> str:
     """Generate Vite / SPA HTML template snippet."""
-    html_code = generate_html_snippet(metadata, preset)
+    html_code = generate_html_snippet(metadata, preset, custom_categories)
     return f"""<!-- Vite / SPA Integration (index.html) -->
 <!-- 1. Extract all icons and manifests directly into your Vite project's "public/" directory -->
 <!-- 2. Paste the following tags inside the <head> of your index.html: -->
@@ -572,15 +693,14 @@ def generate_favicons(
             social_png = create_social_card_fallback(
                 square_image_bytes,
                 bg_color=metadata.background_color,
-                app_name=metadata.app_name,
             )
         files_to_zip["og-image.png"] = social_png
         files_to_zip["twitter-image.png"] = social_png
 
     # 6. Documentation and Multi-Framework Embed Snippets (.txt & .html)
-    html_snippet = generate_html_snippet(metadata, preset)
-    nextjs_snippet = generate_nextjs_snippet(metadata, preset)
-    vite_snippet = generate_vite_snippet(metadata, preset)
+    html_snippet = generate_html_snippet(metadata, preset, custom_categories)
+    nextjs_snippet = generate_nextjs_snippet(metadata, preset, custom_categories)
+    vite_snippet = generate_vite_snippet(metadata, preset, custom_categories)
 
     files_to_zip["snippet-html.txt"] = html_snippet.encode("utf-8")
     files_to_zip["snippet-nextjs.txt"] = nextjs_snippet.encode("utf-8")

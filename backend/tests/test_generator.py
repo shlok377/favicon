@@ -12,7 +12,10 @@ from app.generator import (
     generate_webmanifest,
     generate_browserconfig,
     generate_head_tags_html,
+    generate_html_snippet,
     generate_readme,
+    load_image,
+    CategorySelection,
     FaviconMetadata,
     PresetMode,
 )
@@ -26,6 +29,14 @@ def create_test_image(width=512, height=512, color=(37, 99, 235, 255)) -> bytes:
     return buf.getvalue()
 
 
+def test_load_svg_image():
+    """Verify SVG vectors can be loaded and converted to RGBA Image."""
+    svg_data = b'<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" fill="#2563eb"/></svg>'
+    img = load_image(svg_data)
+    assert img.size == (128, 128)
+    assert img.mode == "RGBA"
+
+
 def test_generate_ico():
     img_bytes = create_test_image(256, 256)
     ico_bytes = generate_ico(img_bytes)
@@ -33,7 +44,9 @@ def test_generate_ico():
     # Verify Pillow can open the generated ICO
     ico = Image.open(io.BytesIO(ico_bytes))
     assert ico.format == "ICO"
-    assert ico.size == (48, 48)  # largest default frame
+    assert (16, 16) in ico.info["sizes"]
+    assert (32, 32) in ico.info["sizes"]
+    assert (48, 48) in ico.info["sizes"]
 
 
 def test_create_social_card_fallback():
@@ -41,7 +54,6 @@ def test_create_social_card_fallback():
     social_bytes = create_social_card_fallback(
         square_bytes,
         bg_color="#121212",
-        app_name="Test App",
     )
     img = Image.open(io.BytesIO(social_bytes))
     assert img.size == (1200, 630)
@@ -50,6 +62,16 @@ def test_create_social_card_fallback():
 def test_generate_monochrome_svg():
     img_bytes = create_test_image(200, 200)
     svg_str = generate_monochrome_svg(img_bytes)
+    assert "<svg" in svg_str
+    assert "</svg>" in svg_str
+
+
+def test_generate_monochrome_svg_opaque_input():
+    """Verify monochrome SVG generation works on opaque JPG-like inputs without failing to a black box."""
+    img = Image.new("RGB", (200, 200), (255, 255, 255))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    svg_str = generate_monochrome_svg(buf.getvalue())
     assert "<svg" in svg_str
     assert "</svg>" in svg_str
 
@@ -77,6 +99,33 @@ def test_generate_browserconfig():
     assert root.tag == "browserconfig"
     tile = root.find(".//tile")
     assert tile is not None
+    # Ensure square144x144logo is NOT present as an XML tag (it was invalid schema)
+    assert tile.find("square144x144logo") is None
+    # Ensure valid XML tags are present
+    assert tile.find("square70x70logo") is not None
+    assert tile.find("square150x150logo") is not None
+    assert tile.find("wide310x150logo") is not None
+    assert tile.find("square310x310logo") is not None
+
+
+def test_snippets_custom_filtering():
+    """Verify that custom category exclusions omit corresponding meta tags from snippets."""
+    meta = FaviconMetadata(site_url="https://example.com")
+    # Exclude social cards and windows tiles
+    cats = CategorySelection(
+        standard_favicons=True,
+        apple_ios=True,
+        android_pwa=False,
+        windows_tiles=False,
+        social_cards=False,
+    )
+    html_code = generate_html_snippet(meta, preset=PresetMode.CUSTOM, custom_categories=cats)
+    assert "favicon.ico" in html_code
+    assert "apple-touch-icon" in html_code
+    assert "site.webmanifest" not in html_code
+    assert "browserconfig.xml" not in html_code
+    assert "og:image" not in html_code
+    assert "twitter:card" not in html_code
 
 
 def test_generate_favicons_standard_suite():

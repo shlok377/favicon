@@ -4,6 +4,7 @@ import json
 from typing import Optional
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from app.generator import (
     generate_favicons,
@@ -41,13 +42,32 @@ async def health_check():
     }
 
 
+class SnippetsRequest(BaseModel):
+    app_name: str = "My Web App"
+    short_name: str = "App"
+    theme_color: str = "#2563eb"
+    background_color: str = "#ffffff"
+    site_url: str = "https://example.com"
+    description: str = "Modern web application with full favicon & social share asset support."
+    preset: PresetMode = PresetMode.STANDARD
+    custom_categories: Optional[CategorySelection] = None
+
+
 @app.post("/api/snippets")
-async def get_snippets(metadata: FaviconMetadata):
+async def get_snippets(request: SnippetsRequest):
     """Generate live copy-paste code snippets for multiple frameworks."""
+    meta = FaviconMetadata(
+        app_name=request.app_name,
+        short_name=request.short_name,
+        theme_color=request.theme_color,
+        background_color=request.background_color,
+        site_url=request.site_url,
+        description=request.description,
+    )
     return {
-        "html_head": generate_html_snippet(metadata, PresetMode.STANDARD),
-        "nextjs_metadata": generate_nextjs_snippet(metadata, PresetMode.STANDARD),
-        "vite_html": generate_vite_snippet(metadata, PresetMode.STANDARD),
+        "html_head": generate_html_snippet(meta, request.preset, request.custom_categories),
+        "nextjs_metadata": generate_nextjs_snippet(meta, request.preset, request.custom_categories),
+        "vite_html": generate_vite_snippet(meta, request.preset, request.custom_categories),
     }
 
 
