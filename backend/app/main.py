@@ -5,7 +5,13 @@ from typing import Optional
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.generator import generate_favicons, generate_head_tags_html
+from app.generator import (
+    generate_favicons,
+    generate_head_tags_html,
+    generate_html_snippet,
+    generate_nextjs_snippet,
+    generate_vite_snippet,
+)
 from app.models import CategorySelection, FaviconMetadata, PresetMode
 
 app = FastAPI(
@@ -35,62 +41,13 @@ async def health_check():
     }
 
 
-def generate_nextjs_snippet(meta: FaviconMetadata) -> str:
-    """Generate Next.js App Router metadata configuration."""
-    domain = meta.site_url.replace("https://", "").replace("http://", "").rstrip("/")
-    return f"""import type {{ Metadata }} from 'next';
-
-export const metadata: Metadata = {{
-  title: '{meta.app_name}',
-  description: '{meta.description}',
-  metadataBase: new URL('{meta.site_url}'),
-  icons: {{
-    icon: [
-      {{ url: '/favicon.ico' }},
-      {{ url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' }},
-      {{ url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }},
-    ],
-    apple: [
-      {{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }},
-    ],
-  }},
-  manifest: '/site.webmanifest',
-  openGraph: {{
-    title: '{meta.app_name}',
-    description: '{meta.description}',
-    url: '{meta.site_url}',
-    siteName: '{meta.app_name}',
-    images: [
-      {{
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: '{meta.app_name}',
-      }},
-    ],
-    type: 'website',
-  }},
-  twitter: {{
-    card: 'summary_large_image',
-    title: '{meta.app_name}',
-    description: '{meta.description}',
-    images: ['/twitter-image.png'],
-  }},
-}};"""
-
-
-def generate_vite_snippet(meta: FaviconMetadata) -> str:
-    """Generate HTML snippet formatted for Vite / Astro index.html."""
-    return generate_head_tags_html(meta, PresetMode.STANDARD)
-
-
 @app.post("/api/snippets")
 async def get_snippets(metadata: FaviconMetadata):
     """Generate live copy-paste code snippets for multiple frameworks."""
     return {
-        "html_head": generate_head_tags_html(metadata, PresetMode.STANDARD),
-        "nextjs_metadata": generate_nextjs_snippet(metadata),
-        "vite_html": generate_vite_snippet(metadata),
+        "html_head": generate_html_snippet(metadata, PresetMode.STANDARD),
+        "nextjs_metadata": generate_nextjs_snippet(metadata, PresetMode.STANDARD),
+        "vite_html": generate_vite_snippet(metadata, PresetMode.STANDARD),
     }
 
 

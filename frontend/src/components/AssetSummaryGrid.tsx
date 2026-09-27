@@ -37,12 +37,24 @@ export function AssetSummaryGrid({ preset, customCategories }: AssetSummaryGridP
       { name: 'favicon-16x16.png', size: '16×16', category: 'Browser', description: 'Standard resolution browser tab icon' },
       { name: 'favicon-32x32.png', size: '32×32', category: 'Browser', description: 'Retina/HiDPI browser tab icon' },
       { name: 'favicon-48x48.png', size: '48×48', category: 'Browser', description: 'Desktop shortcut / bookmark icon' },
+      { name: 'favicon-96x96.png', size: '96×96', category: 'Browser', description: 'High-DPI Android/desktop favicon' },
+      { name: 'favicon-128.png', size: '128×128', category: 'Browser', description: 'Chrome Web Store & desktop icon' },
+      { name: 'favicon-196x196.png', size: '196×196', category: 'Browser', description: 'Android home screen legacy icon' },
     );
   }
 
   if (includeApple) {
     assets.push(
       { name: 'apple-touch-icon.png', size: '180×180', category: 'Apple iOS', description: 'iOS Home Screen bookmark icon' },
+      { name: 'apple-touch-icon-precomposed.png', size: '180×180', category: 'Apple iOS', description: 'Precomposed iOS icon' },
+      { name: 'apple-touch-icon-152x152.png', size: '152×152', category: 'Apple iOS', description: 'iPad Retina touch icon' },
+      { name: 'apple-touch-icon-144x144.png', size: '144×144', category: 'Apple iOS', description: 'iPad Retina legacy touch icon' },
+      { name: 'apple-touch-icon-120x120.png', size: '120×120', category: 'Apple iOS', description: 'iPhone Retina touch icon' },
+      { name: 'apple-touch-icon-114x114.png', size: '114×114', category: 'Apple iOS', description: 'iPhone Retina legacy icon' },
+      { name: 'apple-touch-icon-76x76.png', size: '76×76', category: 'Apple iOS', description: 'iPad touch icon' },
+      { name: 'apple-touch-icon-72x72.png', size: '72×72', category: 'Apple iOS', description: 'iPad legacy touch icon' },
+      { name: 'apple-touch-icon-60x60.png', size: '60×60', category: 'Apple iOS', description: 'iPhone touch icon' },
+      { name: 'apple-touch-icon-57x57.png', size: '57×57', category: 'Apple iOS', description: 'Classic iPhone touch icon' },
       { name: 'safari-pinned-tab.svg', size: 'Vector', category: 'Safari', description: 'Monochrome pinned tab & touchbar mask' },
     );
   }
@@ -57,8 +69,11 @@ export function AssetSummaryGrid({ preset, customCategories }: AssetSummaryGridP
 
   if (includeWindows) {
     assets.push(
+      { name: 'mstile-70x70.png', size: '70×70', category: 'Windows', description: 'Small Start Menu tile' },
+      { name: 'mstile-144x144.png', size: '144×144', category: 'Windows', description: 'Windows 8 IE10 tile' },
       { name: 'mstile-150x150.png', size: '150×150', category: 'Windows', description: 'Medium Start Menu tile' },
       { name: 'mstile-310x150.png', size: '310×150', category: 'Windows', description: 'Wide Start Menu banner tile' },
+      { name: 'mstile-310x310.png', size: '310×310', category: 'Windows', description: 'Large Start Menu square tile' },
       { name: 'browserconfig.xml', size: 'XML', category: 'Windows', description: 'IE/Edge tile manifest configuration' },
     );
   }
@@ -71,6 +86,10 @@ export function AssetSummaryGrid({ preset, customCategories }: AssetSummaryGridP
   }
 
   assets.push(
+    { name: 'snippet-html.txt', size: 'TXT', category: 'Snippets', description: 'Standard HTML <head> meta tags' },
+    { name: 'snippet-nextjs.txt', size: 'TXT', category: 'Snippets', description: 'Next.js App Router metadata configuration' },
+    { name: 'snippet-vite.txt', size: 'TXT', category: 'Snippets', description: 'Vite / SPA HTML template & PWA instructions' },
+    { name: 'code.txt', size: 'TXT', category: 'Snippets', description: 'Favic-o-matic compatible snippet' },
     { name: 'head-tags.html', size: 'HTML', category: 'Guide', description: 'Pre-formatted embed tags ready to copy' },
     { name: 'README.md', size: 'Markdown', category: 'Guide', description: 'Step-by-step extraction & placement instructions' },
   );

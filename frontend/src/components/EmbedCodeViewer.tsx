@@ -16,19 +16,34 @@ export function EmbedCodeViewer({ metadata, preset }: EmbedCodeViewerProps) {
   const domain = cleanUrl.replace(/^https?:\/\//, '');
 
   const getHtmlSnippet = () => {
-    let code = `<!-- Favicon & App Icons -->
+    let code = `<!-- Favicon & Browser Icons -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">`;
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="/favicon-128.png">
+<link rel="icon" type="image/png" sizes="196x196" href="/favicon-196x196.png">
+
+<!-- Apple Touch Icons (iOS) -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">`;
 
     if (preset !== 'minimal') {
       code += `
 <link rel="mask-icon" href="/safari-pinned-tab.svg" color="${metadata.themeColor}">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="msapplication-TileColor" content="${metadata.themeColor}">
-<meta name="msapplication-config" content="/browserconfig.xml">
 <meta name="theme-color" content="${metadata.themeColor}">
+<meta name="msapplication-TileColor" content="${metadata.themeColor}">
+<meta name="msapplication-TileImage" content="/mstile-144x144.png">
+<meta name="msapplication-config" content="/browserconfig.xml">
 
 <!-- Open Graph / WhatsApp / Facebook Share Cards -->
 <meta property="og:type" content="website">
@@ -50,7 +65,7 @@ export function EmbedCodeViewer({ metadata, preset }: EmbedCodeViewerProps) {
   };
 
   const getNextJsSnippet = () => {
-    return `// app/layout.tsx
+    return `// app/layout.tsx (Next.js App Router)
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -62,9 +77,28 @@ export const metadata: Metadata = {
       { url: '/favicon.ico' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-128.png', sizes: '128x128', type: 'image/png' },
+      { url: '/favicon-196x196.png', sizes: '196x196', type: 'image/png' },
     ],
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon-152x152.png', sizes: '152x152', type: 'image/png' },
+      { url: '/apple-touch-icon-144x144.png', sizes: '144x144', type: 'image/png' },
+      { url: '/apple-touch-icon-120x120.png', sizes: '120x120', type: 'image/png' },
+      { url: '/apple-touch-icon-114x114.png', sizes: '114x114', type: 'image/png' },
+      { url: '/apple-touch-icon-76x76.png', sizes: '76x76', type: 'image/png' },
+      { url: '/apple-touch-icon-72x72.png', sizes: '72x72', type: 'image/png' },
+      { url: '/apple-touch-icon-60x60.png', sizes: '60x60', type: 'image/png' },
+      { url: '/apple-touch-icon-57x57.png', sizes: '57x57', type: 'image/png' },
+    ],
+    other: [
+      {
+        rel: 'mask-icon',
+        url: '/safari-pinned-tab.svg',
+        color: '${metadata.themeColor}',
+      },
     ],
   },
   manifest: '/site.webmanifest',
@@ -93,7 +127,24 @@ export const metadata: Metadata = {
   };
 
   const getViteSnippet = () => {
-    return getHtmlSnippet();
+    return `<!-- Vite / SPA Integration (index.html) -->
+<!-- 1. Extract all icons and manifests directly into your Vite project's "public/" directory -->
+<!-- 2. Paste the following tags inside the <head> of your index.html: -->
+
+${getHtmlSnippet()}
+
+<!-- Tip for vite-plugin-pwa (optional in vite.config.ts):
+import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      manifest: false, // uses the included site.webmanifest from public/
+    }),
+  ],
+});
+-->`;
   };
 
   const currentCode =

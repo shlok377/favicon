@@ -5,7 +5,7 @@ import json
 import xml.etree.ElementTree as ET
 import zipfile
 from typing import Dict, Optional, Tuple
-from PIL import Image, ImageColor, ImageOps
+from PIL import Image, ImageColor, ImageFilter, ImageOps
 
 from app.models import CategorySelection, FaviconMetadata, PresetMode
 
@@ -26,18 +26,110 @@ def load_image(image_bytes: bytes) -> Image.Image:
     return img
 
 
-def resize_image(image: Image.Image, size: Tuple[int, int], fit: bool = True, bg_color: Optional[str] = None) -> Image.Image:
+def trim_transparent_borders(img: Image.Image, padding_pct: float = 0.05) -> Image.Image:
     """
-    Resize image to target size using high-quality Lanczos resampling.
-    If fit is True, keeps aspect ratio and pads to fit size.
+    Auto-trim excess transparent margins so the logo maximizes the icon canvas,
+    adding a small aesthetic safe-zone padding.
+    """
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+        
+    alpha = img.split()[-1]
+    bbox = alpha.getbbox()
+    if not bbox:
+        return img  # Entirely transparent or empty
+        
+    # Crop to content
+    cropped = img.crop(bbox)
+    
+    # Calculate square bounding box with safe padding
+    max_dim = max(cropped.width, cropped.height)
+    pad = int(max_dim * padding_pct)
+    canvas_size = max_dim + (pad * 2)
+    
+    square_canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    paste_x = (canvas_size - cropped.width) // 2
+    paste_y = (canvas_size - cropped.height) // 2
+    square_canvas.paste(cropped, (paste_x, paste_y), cropped)
+    return square_canvas
+
+
+def clean_alpha_fringing(img: Image.Image) -> Image.Image:
+    """
+    Clean up RGB values of transparent/semi-transparent pixels to avoid dark halos during resampling.
+    """
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    return img
+
+
+def adaptive_sharpen_icon(img: Image.Image, target_size: int) -> Image.Image:
+    """
+    Apply calibrated unsharp masking tailored to small icon dimensions (16, 32, 48)
+    to restore edge contrast and micro-sharpness lost during massive downsampling.
+    """
+    if target_size <= 16:
+        # High unsharp mask for 16x16
+        return img.filter(ImageFilter.UnsharpMask(radius=0.6, percent=170, threshold=1))
+    elif target_size <= 32:
+        # Moderate unsharp mask for 32x32
+        return img.filter(ImageFilter.UnsharpMask(radius=0.7, percent=140, threshold=1))
+    elif target_size <= 48:
+        # Subtle unsharp mask for 48x48
+        return img.filter(ImageFilter.UnsharpMask(radius=0.8, percent=120, threshold=2))
+    elif target_size <= 96:
+        # Very subtle sharpening for 96x96
+        return img.filter(ImageFilter.UnsharpMask(radius=0.9, percent=100, threshold=2))
+    return img
+
+
+def progressive_downscale(image: Image.Image, target_size: Tuple[int, int]) -> Image.Image:
+    """
+    Downscale in multiple progressive steps if the scaling factor is large (> 3x),
+    preventing aliasing and pixel loss.
+    """
+    current_w, current_h = image.size
+    target_w, target_h = target_size
+    
+    img = image
+    while current_w > target_w * 2 and current_h > target_h * 2:
+        current_w = max(target_w, current_w // 2)
+        current_h = max(target_h, current_h // 2)
+        img = img.resize((current_w, current_h), Image.Resampling.LANCZOS)
+        
+    return img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+
+
+def resize_image(
+    image: Image.Image,
+    size: Tuple[int, int],
+    fit: bool = True,
+    bg_color: Optional[str] = None,
+    autotrim: bool = True,
+    sharpen: bool = True,
+) -> Image.Image:
+    """
+    High-fidelity icon resizing using autotrimming, progressive downscaling,
+    and adaptive unsharp masking.
     """
     target_w, target_h = size
+    
+    # Auto-trim transparent borders if requested and applicable
+    if autotrim and size[0] <= 180 and image.width == image.height:
+        work_img = trim_transparent_borders(image, padding_pct=0.04)
+    else:
+        work_img = image
+
     if fit:
         # Scale to fit within bounds
-        ratio = min(target_w / image.width, target_h / image.height)
-        new_w = max(1, int(image.width * ratio))
-        new_h = max(1, int(image.height * ratio))
-        resized = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        ratio = min(target_w / work_img.width, target_h / work_img.height)
+        new_w = max(1, int(work_img.width * ratio))
+        new_h = max(1, int(work_img.height * ratio))
+        
+        resized = progressive_downscale(work_img, (new_w, new_h))
+        
+        if sharpen and max(new_w, new_h) <= 96:
+            resized = adaptive_sharpen_icon(resized, max(new_w, new_h))
         
         # Create canvas
         if bg_color and bg_color.lower() != "transparent":
@@ -51,28 +143,38 @@ def resize_image(image: Image.Image, size: Tuple[int, int], fit: bool = True, bg
         canvas.paste(resized, (paste_x, paste_y), resized)
         return canvas
     else:
-        return image.resize(size, Image.Resampling.LANCZOS)
+        resized = progressive_downscale(work_img, size)
+        if sharpen and max(target_w, target_h) <= 96:
+            resized = adaptive_sharpen_icon(resized, max(target_w, target_h))
+        return resized
 
 
 def generate_ico(image_bytes: bytes) -> bytes:
-    """Generate multi-resolution .ico containing 16x16, 32x32, and 48x48 frames."""
+    """
+    Generate professional multi-resolution .ico containing individually rendered
+    and sharpened 16x16, 32x32, and 48x48 frames.
+    """
     base_img = load_image(image_bytes)
-    # Generate 48x48 base image for ICO
-    img_48 = resize_image(base_img, (48, 48))
+    
+    # Pre-render each frame with optimized sharpness
+    img_16 = resize_image(base_img, (16, 16), fit=True, autotrim=True, sharpen=True)
+    img_32 = resize_image(base_img, (32, 32), fit=True, autotrim=True, sharpen=True)
+    img_48 = resize_image(base_img, (48, 48), fit=True, autotrim=True, sharpen=True)
     
     out_buf = io.BytesIO()
-    # Save as multi-layer ICO
+    # Save multi-frame ICO containing all 3 resolutions
     img_48.save(
         out_buf,
         format="ICO",
+        append_images=[img_16, img_32],
         sizes=[(16, 16), (32, 32), (48, 48)],
     )
     return out_buf.getvalue()
 
 
 def generate_png(image: Image.Image, size: Tuple[int, int], bg_color: Optional[str] = None) -> bytes:
-    """Generate a single PNG image at specified dimensions."""
-    resized = resize_image(image, size, fit=True, bg_color=bg_color)
+    """Generate a single PNG image at specified dimensions with high sharpness."""
+    resized = resize_image(image, size, fit=True, bg_color=bg_color, autotrim=True, sharpen=True)
     out_buf = io.BytesIO()
     resized.save(out_buf, format="PNG", optimize=True)
     return out_buf.getvalue()
@@ -143,6 +245,16 @@ def generate_webmanifest(metadata: FaviconMetadata) -> str:
         "short_name": metadata.short_name,
         "icons": [
             {
+                "src": "/favicon-96x96.png",
+                "sizes": "96x96",
+                "type": "image/png",
+            },
+            {
+                "src": "/favicon-196x196.png",
+                "sizes": "196x196",
+                "type": "image/png",
+            },
+            {
                 "src": "/android-chrome-192x192.png",
                 "sizes": "192x192",
                 "type": "image/png",
@@ -168,6 +280,7 @@ def generate_browserconfig(metadata: FaviconMetadata) -> str:
   <msapplication>
     <tile>
       <square70x70logo src="/mstile-70x70.png"/>
+      <square144x144logo src="/mstile-144x144.png"/>
       <square150x150logo src="/mstile-150x150.png"/>
       <wide310x150logo src="/mstile-310x150.png"/>
       <square310x310logo src="/mstile-310x310.png"/>
@@ -178,23 +291,38 @@ def generate_browserconfig(metadata: FaviconMetadata) -> str:
     return xml
 
 
-def generate_head_tags_html(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
-    """Generate ready-to-copy HTML <head> tags."""
+def generate_html_snippet(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+    """Generate ready-to-copy HTML <head> tags including standard & legacy compatibility."""
     lines = [
-        "<!-- Favicon & App Icons -->",
+        "<!-- Favicon & Browser Icons -->",
         '<link rel="icon" type="image/x-icon" href="/favicon.ico">',
         '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">',
         '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">',
+        '<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">',
+        '<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">',
+        '<link rel="icon" type="image/png" sizes="128x128" href="/favicon-128.png">',
+        '<link rel="icon" type="image/png" sizes="196x196" href="/favicon-196x196.png">',
+        "",
+        "<!-- Apple Touch Icons (iOS) -->",
         '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">',
+        '<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">',
+        '<link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">',
+        '<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">',
+        '<link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">',
+        '<link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">',
+        '<link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">',
+        '<link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">',
+        '<link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">',
     ]
 
     if preset != PresetMode.MINIMAL:
         lines.extend([
             f'<link rel="mask-icon" href="/safari-pinned-tab.svg" color="{metadata.theme_color}">',
             '<link rel="manifest" href="/site.webmanifest">',
-            f'<meta name="msapplication-TileColor" content="{metadata.theme_color}">',
-            '<meta name="msapplication-config" content="/browserconfig.xml">',
             f'<meta name="theme-color" content="{metadata.theme_color}">',
+            f'<meta name="msapplication-TileColor" content="{metadata.theme_color}">',
+            '<meta name="msapplication-TileImage" content="/mstile-144x144.png">',
+            '<meta name="msapplication-config" content="/browserconfig.xml">',
             "",
             "<!-- Open Graph / Facebook / WhatsApp Share Cards -->",
             '<meta property="og:type" content="website">',
@@ -215,6 +343,98 @@ def generate_head_tags_html(metadata: FaviconMetadata, preset: PresetMode = Pres
     return "\n".join(lines)
 
 
+def generate_head_tags_html(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+    """Generate ready-to-copy HTML <head> tags."""
+    return generate_html_snippet(metadata, preset)
+
+
+def generate_nextjs_snippet(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+    """Generate Next.js App Router metadata configuration."""
+    clean_url = metadata.site_url.rstrip("/")
+    return f"""// app/layout.tsx (Next.js App Router)
+import type {{ Metadata }} from 'next';
+
+export const metadata: Metadata = {{
+  title: '{metadata.app_name}',
+  description: '{metadata.description}',
+  metadataBase: new URL('{clean_url}'),
+  icons: {{
+    icon: [
+      {{ url: '/favicon.ico' }},
+      {{ url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' }},
+      {{ url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }},
+      {{ url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' }},
+      {{ url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }},
+      {{ url: '/favicon-128.png', sizes: '128x128', type: 'image/png' }},
+      {{ url: '/favicon-196x196.png', sizes: '196x196', type: 'image/png' }},
+    ],
+    apple: [
+      {{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-152x152.png', sizes: '152x152', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-144x144.png', sizes: '144x144', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-120x120.png', sizes: '120x120', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-114x114.png', sizes: '114x114', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-76x76.png', sizes: '76x76', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-72x72.png', sizes: '72x72', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-60x60.png', sizes: '60x60', type: 'image/png' }},
+      {{ url: '/apple-touch-icon-57x57.png', sizes: '57x57', type: 'image/png' }},
+    ],
+    other: [
+      {{
+        rel: 'mask-icon',
+        url: '/safari-pinned-tab.svg',
+        color: '{metadata.theme_color}',
+      }},
+    ],
+  }},
+  manifest: '/site.webmanifest',
+  openGraph: {{
+    title: '{metadata.app_name}',
+    description: '{metadata.description}',
+    url: '{clean_url}',
+    siteName: '{metadata.app_name}',
+    images: [
+      {{
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: '{metadata.app_name}',
+      }},
+    ],
+    type: 'website',
+  }},
+  twitter: {{
+    card: 'summary_large_image',
+    title: '{metadata.app_name}',
+    description: '{metadata.description}',
+    images: ['/twitter-image.png'],
+  }},
+}};"""
+
+
+def generate_vite_snippet(metadata: FaviconMetadata, preset: PresetMode = PresetMode.STANDARD) -> str:
+    """Generate Vite / SPA HTML template snippet."""
+    html_code = generate_html_snippet(metadata, preset)
+    return f"""<!-- Vite / SPA Integration (index.html) -->
+<!-- 1. Extract all icons and manifests directly into your Vite project's "public/" directory -->
+<!-- 2. Paste the following tags inside the <head> of your index.html: -->
+
+{html_code}
+
+<!-- Tip for vite-plugin-pwa (optional in vite.config.ts):
+import {{ defineConfig }} from 'vite';
+import {{ VitePWA }} from 'vite-plugin-pwa';
+
+export default defineConfig({{
+  plugins: [
+    VitePWA({{
+      manifest: false, // uses the included site.webmanifest from public/
+    }}),
+  ],
+}});
+-->"""
+
+
 def generate_readme(metadata: FaviconMetadata) -> str:
     """Generate a clean README.md guide for the downloaded assets."""
     return f"""# {metadata.app_name} Favicon & Asset Pack
@@ -225,26 +445,42 @@ All files in this zip archive are organized with a flat structure and ready to b
 
 1. **Favicons & Browser Icons**:
    - `favicon.ico` (Multi-resolution: 16x16, 32x32, 48x48)
-   - `favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png`
-   - `apple-touch-icon.png` (180x180 for iOS Home Screen)
-   - `safari-pinned-tab.svg` (Monochrome mask icon)
+   - `favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png`, `favicon-96x96.png`
+   - `favicon-128.png` (Chrome Web Store / legacy desktop)
+   - `favicon-196x196.png` (Legacy Android home screen)
 
-2. **Android & PWA**:
+2. **Apple iOS Touch Icons**:
+   - `apple-touch-icon.png` (180x180 modern iOS standard)
+   - `apple-touch-icon-precomposed.png` (180x180)
+   - Legacy iOS sizes: `57x57`, `60x60`, `72x72`, `76x76`, `114x114`, `120x120`, `144x144`, `152x152`
+   - `safari-pinned-tab.svg` (Monochrome vector mask)
+
+3. **Android & PWA**:
    - `android-chrome-192x192.png`, `android-chrome-512x512.png`
    - `site.webmanifest` (App Name: "{metadata.app_name}", Theme Color: {metadata.theme_color})
 
-3. **Windows Tiles**:
-   - `mstile-70x70.png`, `mstile-150x150.png`, `mstile-310x150.png`, `mstile-310x310.png`
+4. **Windows Tiles & Config**:
+   - `mstile-70x70.png`, `mstile-144x144.png`, `mstile-150x150.png`, `mstile-310x150.png`, `mstile-310x310.png`
    - `browserconfig.xml`
 
-4. **Social & WhatsApp Sharing Cards**:
+5. **Social & WhatsApp Sharing Cards**:
    - `og-image.png` (1200x630 OpenGraph card)
    - `twitter-image.png` (1200x630 Twitter card)
 
+6. **Embed Snippets**:
+   - `snippet-html.txt` (Standard HTML `<head>` tags)
+   - `snippet-nextjs.txt` (Next.js App Router metadata object)
+   - `snippet-vite.txt` (Vite index.html tags & PWA guide)
+   - `code.txt` (Favic-o-matic compatible HTML snippet)
+   - `head-tags.html` (HTML snippet in HTML format)
+
 ## 🚀 How to Use
 
-1. Unzip and copy all files to your project's `public/` folder.
-2. Copy the HTML code from `head-tags.html` into your `<head>` section in `index.html` or layout template.
+1. Unzip and copy all files to your project's `public/` (or `static/`) folder.
+2. Choose your preferred snippet file:
+   - For HTML/PHP/Static: copy from `snippet-html.txt` or `head-tags.html`
+   - For Next.js: copy `metadata` from `snippet-nextjs.txt` into `app/layout.tsx`
+   - For Vite/React/Vue: copy tags from `snippet-vite.txt` into `index.html`
 
 Generated with Favicon & Social Asset Generator.
 """
@@ -295,11 +531,16 @@ def generate_favicons(
         files_to_zip["favicon-32x32.png"] = generate_png(square_img, (32, 32))
         files_to_zip["favicon-48x48.png"] = generate_png(square_img, (48, 48))
         files_to_zip["favicon-96x96.png"] = generate_png(square_img, (96, 96))
+        files_to_zip["favicon-128.png"] = generate_png(square_img, (128, 128))
+        files_to_zip["favicon-196x196.png"] = generate_png(square_img, (196, 196))
 
     # 2. Apple iOS
     if include_apple:
         files_to_zip["apple-touch-icon.png"] = generate_png(square_img, (180, 180), bg_color=metadata.background_color)
         files_to_zip["apple-touch-icon-precomposed.png"] = generate_png(square_img, (180, 180), bg_color=metadata.background_color)
+        # Legacy Favic-o-matic sizes for complete backward compatibility
+        for size in [57, 60, 72, 76, 114, 120, 144, 152]:
+            files_to_zip[f"apple-touch-icon-{size}x{size}.png"] = generate_png(square_img, (size, size), bg_color=metadata.background_color)
         files_to_zip["safari-pinned-tab.svg"] = generate_monochrome_svg(square_image_bytes).encode("utf-8")
 
     # 3. Android & PWA
@@ -311,6 +552,7 @@ def generate_favicons(
     # 4. Windows Microsoft Tiles
     if include_windows:
         files_to_zip["mstile-70x70.png"] = generate_png(square_img, (70, 70))
+        files_to_zip["mstile-144x144.png"] = generate_png(square_img, (144, 144))
         files_to_zip["mstile-150x150.png"] = generate_png(square_img, (150, 150))
         files_to_zip["mstile-310x310.png"] = generate_png(square_img, (310, 310))
         
@@ -335,8 +577,16 @@ def generate_favicons(
         files_to_zip["og-image.png"] = social_png
         files_to_zip["twitter-image.png"] = social_png
 
-    # 6. Documentation and Embed Snippet
-    files_to_zip["head-tags.html"] = generate_head_tags_html(metadata, preset).encode("utf-8")
+    # 6. Documentation and Multi-Framework Embed Snippets (.txt & .html)
+    html_snippet = generate_html_snippet(metadata, preset)
+    nextjs_snippet = generate_nextjs_snippet(metadata, preset)
+    vite_snippet = generate_vite_snippet(metadata, preset)
+
+    files_to_zip["snippet-html.txt"] = html_snippet.encode("utf-8")
+    files_to_zip["snippet-nextjs.txt"] = nextjs_snippet.encode("utf-8")
+    files_to_zip["snippet-vite.txt"] = vite_snippet.encode("utf-8")
+    files_to_zip["code.txt"] = html_snippet.encode("utf-8")
+    files_to_zip["head-tags.html"] = html_snippet.encode("utf-8")
     files_to_zip["README.md"] = generate_readme(metadata).encode("utf-8")
 
     # Package all files into in-memory ZIP archive

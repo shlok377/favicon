@@ -105,21 +105,43 @@ def test_generate_favicons_standard_suite():
         assert "favicon-16x16.png" in filenames
         assert "favicon-32x32.png" in filenames
         assert "favicon-48x48.png" in filenames
+        assert "favicon-96x96.png" in filenames
+        assert "favicon-128.png" in filenames
+        assert "favicon-196x196.png" in filenames
+        # Apple iOS (Modern + Legacy)
         assert "apple-touch-icon.png" in filenames
+        assert "apple-touch-icon-precomposed.png" in filenames
+        assert "apple-touch-icon-57x57.png" in filenames
+        assert "apple-touch-icon-60x60.png" in filenames
+        assert "apple-touch-icon-72x72.png" in filenames
+        assert "apple-touch-icon-76x76.png" in filenames
+        assert "apple-touch-icon-114x114.png" in filenames
+        assert "apple-touch-icon-120x120.png" in filenames
+        assert "apple-touch-icon-144x144.png" in filenames
+        assert "apple-touch-icon-152x152.png" in filenames
+        # Android / PWA
         assert "android-chrome-192x192.png" in filenames
         assert "android-chrome-512x512.png" in filenames
         # Windows tiles
+        assert "mstile-70x70.png" in filenames
+        assert "mstile-144x144.png" in filenames
         assert "mstile-150x150.png" in filenames
         assert "mstile-310x150.png" in filenames
+        assert "mstile-310x310.png" in filenames
         assert "browserconfig.xml" in filenames
         # Social
         assert "og-image.png" in filenames
         assert "twitter-image.png" in filenames
-        # Manifest & Guides
+        # Manifest & Multi-Framework Snippets
         assert "site.webmanifest" in filenames
         assert "safari-pinned-tab.svg" in filenames
+        assert "snippet-html.txt" in filenames
+        assert "snippet-nextjs.txt" in filenames
+        assert "snippet-vite.txt" in filenames
+        assert "code.txt" in filenames
         assert "head-tags.html" in filenames
         assert "README.md" in filenames
+
 
 
 def test_generate_favicons_minimal_preset():
