@@ -49,7 +49,7 @@ FRONTEND_PID=""
 
 cleanup() {
     echo ""
-    echo "🛑 Shutting down Favicon Generator services..."
+    echo "🛑 Shutting down Favi services..."
     if [ -n "$FRONTEND_PID" ]; then
         kill "$FRONTEND_PID" 2>/dev/null || true
     fi
@@ -91,7 +91,7 @@ elif command -v open &> /dev/null; then
     open "$URL" >/dev/null 2>&1 &
 fi
 
-echo "✨ Favicon Generator is running at $URL"
+echo "✨ Favi is running at $URL"
 echo "Press Ctrl+C to stop both servers."
 
 # Wait on background processes

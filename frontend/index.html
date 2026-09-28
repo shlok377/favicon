@@ -3,10 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Favicon & Social Asset Generator</title>
-    <meta name="description" content="Generate high-resolution favicons, Apple touch icons, PWA manifests, and social share cards for web projects." />
+    <title>Favi — Favicon &amp; Social Asset Generator</title>
+    <meta name="description" content="Favi - Get high-resolution favicons, Apple touch icons, PWA manifests, and social share cards crazy fast!" />
+
+    <!-- Favicon & Browser Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/favicon-128.png" />
+    <link rel="icon" type="image/png" sizes="196x196" href="/favicon-196x196.png" />
+
+    <!-- Apple Touch Icons (iOS) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#004643" />
+
+    <!-- Android & PWA Manifest -->
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#004643" />
+
+    <!-- Windows Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#004643" />
+    <meta name="msapplication-TileImage" content="/mstile-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Favi — Favicon &amp; Social Asset Generator" />
+    <meta property="og:description" content="Favi - Get favicons crazy fast! Generate multi-resolution favicons, Apple touch icons, PWA manifests, and social preview cards." />
+    <meta property="og:image" content="/og-image.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Favi — Favicon &amp; Social Asset Generator" />
+    <meta name="twitter:description" content="Favi - Get favicons crazy fast! Generate multi-resolution favicons, Apple touch icons, PWA manifests, and social preview cards." />
+    <meta name="twitter:image" content="/twitter-image.png" />
   </head>
-  <body class="bg-surface-50 dark:bg-surface-950 text-surface-800 dark:text-surface-100 antialiased min-h-screen selection:bg-primary selection:text-white">
+  <body class="bg-[#004643] text-[#004643] antialiased h-screen overflow-hidden selection:bg-[#d7f7f6] selection:text-[#004643]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

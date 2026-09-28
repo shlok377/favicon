@@ -1,5 +1,4 @@
-import { Eye, Smartphone, MessageSquare, Monitor, LayoutGrid, X } from 'lucide-react';
-import { useState } from 'react';
+import { X } from 'lucide-react';
 import type { MetadataState } from './MetadataPanel';
 
 interface LiveMockupsProps {
@@ -13,217 +12,232 @@ export function LiveMockups({
   horizontalPreview,
   metadata,
 }: LiveMockupsProps) {
-  const [activeTab, setActiveTab] = useState<'browser' | 'ios' | 'whatsapp' | 'windows'>('browser');
-
   const domain = metadata.siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
   const socialImageSrc = horizontalPreview || squarePreview;
 
   return (
-    <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-5 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-surface-600 dark:text-surface-300" />
-          <h3 className="font-semibold text-sm text-surface-900 dark:text-surface-50">
-            Live Simulated Previews
-          </h3>
-        </div>
-
-        {/* Mockup Switcher Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-surface-100 dark:bg-surface-800 rounded-lg self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('browser')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'browser'
-                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 shadow-sm'
-                : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-200'
-            }`}
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span>Browser Tab</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('ios')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'ios'
-                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 shadow-sm'
-                : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-200'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>iOS Icon</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('whatsapp')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'whatsapp'
-                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 shadow-sm'
-                : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-200'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>WhatsApp / Social</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('windows')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'windows'
-                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 shadow-sm'
-                : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-200'
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Windows Tile</span>
-          </button>
-        </div>
+    <div className="bg-[#d7f7f6] border border-[#004643]/20 rounded-[32px] p-5 sm:p-6 shadow-2xl flex flex-col h-full min-h-0 overflow-hidden">
+      {/* Header */}
+      <div className="mb-3 shrink-0">
+        <h4 className="font-bold text-base tracking-tight text-[#004643]">
+          Live Preview
+        </h4>
       </div>
 
-      {/* Mockup Canvas */}
-      <div className="border border-surface-200 dark:border-surface-800 rounded-lg p-6 bg-surface-50/50 dark:bg-surface-950/50 flex items-center justify-center min-h-[260px]">
+      {/* Previews Stacked Directly Without Outer Card Wrappers */}
+      <div className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
         {/* 1. Browser Tab Mockup */}
-        {activeTab === 'browser' && (
-          <div className="w-full max-w-lg bg-surface-200 dark:bg-surface-800 rounded-xl overflow-hidden shadow-sm border border-surface-300 dark:border-surface-700">
-            {/* Window bar */}
-            <div className="px-3 pt-2 pb-1.5 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 mr-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+        <div className="space-y-1.5 shrink-0">
+          <span className="text-[10px] font-bold text-[#004643]/80 uppercase tracking-wider pl-0.5">
+            Browser
+          </span>
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-[#004643]/15 space-y-2 hover:border-[#004643]/30 transition-all duration-200">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 opacity-70">
+                <div className="w-2 h-2 rounded-full bg-rose-400" />
+                <div className="w-2 h-2 rounded-full bg-amber-400" />
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
               </div>
-
-              {/* Active Tab */}
-              <div className="bg-white dark:bg-surface-900 px-3 py-1.5 rounded-t-lg flex items-center gap-2 max-w-[240px] shadow-sm">
+              <div
+                className="flex-1 max-w-[200px] px-2.5 py-1 rounded-lg flex items-center gap-1.5 border border-[#004643]/15 transition-colors duration-300"
+                style={{ backgroundColor: `${metadata.themeColor || '#d7f7f6'}20` }}
+              >
                 {squarePreview ? (
                   <img
                     src={squarePreview}
                     alt="Favicon"
-                    className="w-4 h-4 rounded object-contain shrink-0"
+                    className="w-3.5 h-3.5 rounded object-contain shrink-0 transition-transform duration-200 hover:scale-110"
                   />
                 ) : (
-                  <div className="w-4 h-4 rounded bg-surface-300 dark:bg-surface-700 shrink-0"></div>
+                  <div className="w-3.5 h-3.5 rounded bg-[#004643]/30 shrink-0" />
                 )}
-                <span className="text-xs font-medium text-surface-900 dark:text-surface-100 truncate">
+                <span className="text-[11px] font-semibold text-[#004643] truncate flex-1">
                   {metadata.appName || 'My Web App'}
                 </span>
-                <X className="w-3 h-3 text-surface-400 ml-auto shrink-0 cursor-pointer" />
+                <X className="w-2.5 h-2.5 text-[#004643]/70 shrink-0" />
               </div>
             </div>
-
-            {/* Address bar */}
-            <div className="bg-white dark:bg-surface-900 p-2 border-t border-surface-300 dark:border-surface-700">
-              <div className="bg-surface-100 dark:bg-surface-800 rounded-md px-3 py-1 text-xs text-surface-600 dark:text-surface-300 font-mono flex items-center gap-2">
-                <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">🔒</span>
-                <span className="truncate">{metadata.siteUrl || 'https://example.com'}</span>
-              </div>
+            <div className="bg-[#d7f7f6]/40 px-2.5 py-1 rounded-lg text-[9px] text-[#004643] font-mono truncate border border-[#004643]/10">
+              🔒 {metadata.siteUrl || 'https://example.com'}
             </div>
           </div>
-        )}
+        </div>
 
-        {/* 2. iOS Home Screen Mockup */}
-        {activeTab === 'ios' && (
-          <div className="flex flex-col items-center">
+        {/* 2. iOS Home Screen Mockup with Tactile Interactive Squircle */}
+        <div className="space-y-1.5 shrink-0">
+          <span className="text-[10px] font-bold text-[#004643]/80 uppercase tracking-wider pl-0.5">
+            iOS Icon
+          </span>
+          <div className="flex flex-col items-center justify-center py-2">
             <div
-              className="w-20 h-20 rounded-2xl overflow-hidden shadow-md flex items-center justify-center border border-black/10"
-              style={{ backgroundColor: metadata.backgroundColor || '#ffffff' }}
+              className="w-16 h-16 rounded-[22%] overflow-hidden shadow-md flex items-center justify-center border border-black/10 shrink-0 cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 hover:-rotate-2 hover:shadow-xl active:scale-95"
+              style={{
+                backgroundColor: metadata.backgroundColor || '#ffffff',
+                transition: 'background-color 300ms ease, transform 300ms cubic-bezier(0.16,1,0.3,1), box-shadow 300ms ease',
+              }}
+              title="iOS App Icon Preview"
             >
               {squarePreview ? (
                 <img
                   src={squarePreview}
-                  alt="iOS App Icon"
-                  className="w-full h-full object-contain p-2"
+                  alt="iOS Icon"
+                  className="w-full h-full object-contain p-2 transition-transform duration-200 hover:scale-105"
                 />
               ) : (
-                <div className="w-full h-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center text-xs text-surface-400">
-                  Icon
+                <div className="w-full h-full bg-white flex items-center justify-center text-xs text-[#004643] font-semibold">
+                  App
                 </div>
               )}
             </div>
-            <span className="mt-2 text-xs font-medium text-surface-800 dark:text-surface-200">
+            <span className="mt-1.5 text-xs font-semibold text-[#004643] truncate max-w-[120px] text-center">
               {metadata.shortName || 'App'}
             </span>
           </div>
-        )}
+        </div>
 
-        {/* 3. WhatsApp / Social Share Chat Bubble Mockup */}
-        {activeTab === 'whatsapp' && (
-          <div className="w-full max-w-sm bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl overflow-hidden shadow-sm">
-            {/* Card Banner Image */}
+        {/* 3. Social Share Card Mockup */}
+        <div className="space-y-1.5 shrink-0">
+          <div className="flex items-center justify-between pl-0.5">
+            <span className="text-[10px] font-bold text-[#004643]/80 uppercase tracking-wider">
+              Social Card
+            </span>
+            <span className="text-[9px] font-mono text-[#004643]/70">
+              1200 × 630
+            </span>
+          </div>
+          <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#004643]/15 hover:border-[#004643]/30 hover:shadow-md transition-all duration-200">
             <div
-              className="w-full h-40 overflow-hidden flex items-center justify-center relative"
-              style={{ backgroundColor: metadata.backgroundColor || '#121212' }}
+              className="w-full aspect-[1.91/1] max-h-36 overflow-hidden flex items-center justify-center transition-colors duration-300"
+              style={{ backgroundColor: metadata.backgroundColor || '#004643' }}
             >
               {socialImageSrc ? (
                 <img
                   src={socialImageSrc}
-                  alt="Social Card Preview"
-                  className="w-full h-full object-contain"
+                  alt="Social preview"
+                  className="w-full h-full object-contain p-2 transition-transform duration-300 hover:scale-105"
                 />
               ) : (
-                <div className="text-xs text-surface-400 flex items-center gap-1.5 font-mono">
-                  <span>1200 × 630 Preview</span>
-                </div>
+                <div className="text-xs text-[#d7f7f6] font-mono">1.91:1 Preview Banner</div>
               )}
             </div>
-
-            {/* Content Details */}
-            <div className="p-3.5 bg-surface-50 dark:bg-surface-800/60 border-t border-surface-100 dark:border-surface-800">
-              <p className="text-[11px] font-mono text-surface-500 uppercase tracking-wider mb-1">
+            <div className="p-3 border-t border-[#004643]/15">
+              <h5 className="text-xs font-bold text-[#004643] truncate">
+                {metadata.appName || 'My Web App'}
+              </h5>
+              <p className="text-[10px] text-[#004643]/80 truncate mt-0.5">
+                {metadata.description || 'Description preview'}
+              </p>
+              <span className="text-[9px] text-[#004643]/60 font-mono block mt-1">
                 {domain}
-              </p>
-              <h4 className="text-xs font-bold text-surface-900 dark:text-surface-50 mb-1 leading-snug">
-                {metadata.appName || 'My Web App'}
-              </h4>
-              <p className="text-[11px] text-surface-600 dark:text-surface-400 line-clamp-2 leading-relaxed">
-                {metadata.description || 'Modern web application with full favicon & social share asset support.'}
-              </p>
+              </span>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* 4. Windows Start Tile Mockup */}
-        {activeTab === 'windows' && (
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {/* Square 150x150 Tile */}
-            <div
-              className="w-28 h-28 p-3 flex flex-col justify-between rounded shadow-sm text-white relative"
-              style={{ backgroundColor: metadata.themeColor || '#2563eb' }}
-            >
-              <div className="w-10 h-10 mx-auto my-auto flex items-center justify-center">
+        {/* 4. Google Search SERP Snippet Mockup */}
+        <div className="space-y-1.5 shrink-0">
+          <span className="text-[10px] font-bold text-[#004643]/80 uppercase tracking-wider pl-0.5">
+            Google Search
+          </span>
+          <div className="bg-white rounded-xl p-3 shadow-sm border border-[#004643]/15 space-y-1 hover:border-[#004643]/30 transition-all duration-200">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-[#d7f7f6]/60 border border-[#004643]/15 flex items-center justify-center shrink-0">
                 {squarePreview ? (
-                  <img src={squarePreview} alt="Tile logo" className="max-w-full max-h-full object-contain filter brightness-0 invert" />
+                  <img
+                    src={squarePreview}
+                    alt="Favicon"
+                    className="w-3.5 h-3.5 rounded-full object-contain"
+                  />
                 ) : (
-                  <div className="w-8 h-8 rounded bg-white/20"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#004643]/40" />
                 )}
               </div>
-              <span className="text-[10px] font-medium tracking-tight truncate">
-                {metadata.shortName || 'App'}
-              </span>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-medium text-[#004643] block truncate">
+                  {metadata.appName || 'My Web App'}
+                </span>
+                <span className="text-[9px] text-[#004643]/60 font-mono block truncate">
+                  {metadata.siteUrl || 'https://example.com'}
+                </span>
+              </div>
             </div>
+            <h5 className="text-xs font-semibold text-[#004643] truncate pt-0.5">
+              {metadata.appName || 'My Web App'} - Official Website
+            </h5>
+            <p className="text-[10px] text-[#004643]/80 line-clamp-2 leading-relaxed">
+              {metadata.description || 'Explore the official application featuring complete cross-platform favicon, manifest, and modern social card assets.'}
+            </p>
+          </div>
+        </div>
 
-            {/* Wide 310x150 Tile */}
-            <div
-              className="w-48 h-28 p-3 flex flex-col justify-between rounded shadow-sm text-white relative"
-              style={{ backgroundColor: metadata.themeColor || '#2563eb' }}
-            >
-              <div className="w-16 h-10 mx-auto my-auto flex items-center justify-center">
-                {socialImageSrc ? (
-                  <img src={socialImageSrc} alt="Wide tile logo" className="max-w-full max-h-full object-contain filter brightness-0 invert" />
-                ) : (
-                  <div className="w-12 h-6 rounded bg-white/20"></div>
-                )}
+        {/* 5. Windows Start Tiles Mockup (Medium & Wide) with Full Color Actual Preview */}
+        <div className="space-y-1.5 shrink-0 pb-1">
+          <div className="flex items-center justify-between pl-0.5">
+            <span className="text-[10px] font-bold text-[#004643]/80 uppercase tracking-wider">
+              Windows Tile
+            </span>
+            <span className="text-[9px] font-mono text-[#004643]/70">
+              Medium (150×150) & Wide (310×150)
+            </span>
+          </div>
+          <div className="bg-white rounded-xl p-3.5 shadow-sm border border-[#004643]/15 hover:border-[#004643]/30 transition-all duration-200">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {/* Square 150x150 Tile */}
+              <div
+                className="w-28 h-28 p-3 flex flex-col justify-between rounded-lg shadow-sm text-white relative transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer select-none"
+                style={{
+                  backgroundColor: metadata.themeColor || '#004643',
+                  transition: 'background-color 300ms ease, transform 300ms cubic-bezier(0.16,1,0.3,1)',
+                }}
+                title="Windows Medium Tile (150×150)"
+              >
+                <div className="w-12 h-12 mx-auto my-auto flex items-center justify-center">
+                  {squarePreview ? (
+                    <img
+                      src={squarePreview}
+                      alt="Tile logo"
+                      className="w-full h-full object-contain drop-shadow-md rounded-md"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-white/20 flex items-center justify-center text-[10px] text-white/70 font-mono">
+                      1:1
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] font-semibold tracking-tight truncate drop-shadow-md">
+                  {metadata.shortName || 'App'}
+                </span>
               </div>
-              <span className="text-[10px] font-medium tracking-tight truncate">
-                {metadata.appName || 'My Web App'}
-              </span>
+
+              {/* Wide 310x150 Tile */}
+              <div
+                className="w-52 h-28 p-3 flex flex-col justify-between rounded-lg shadow-sm text-white relative transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer select-none"
+                style={{
+                  backgroundColor: metadata.themeColor || '#004643',
+                  transition: 'background-color 300ms ease, transform 300ms cubic-bezier(0.16,1,0.3,1)',
+                }}
+                title="Windows Wide Tile (310×150)"
+              >
+                <div className="w-24 h-12 mx-auto my-auto flex items-center justify-center">
+                  {socialImageSrc ? (
+                    <img
+                      src={socialImageSrc}
+                      alt="Wide tile logo"
+                      className="w-full h-full object-contain drop-shadow-md rounded-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-8 rounded bg-white/20 flex items-center justify-center text-[10px] text-white/70 font-mono">
+                      Wide
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] font-semibold tracking-tight truncate drop-shadow-md">
+                  {metadata.appName || 'My Web App'}
+                </span>
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ from app.generator import (
 from app.models import CategorySelection, FaviconMetadata, PresetMode
 
 app = FastAPI(
-    title="Favicon & Social Asset Generator API",
+    title="Favi - Favicon & Social Asset Generator API",
     description="Generate multi-resolution favicons, social media preview cards, manifests, and embed code.",
     version="1.0.0",
 )

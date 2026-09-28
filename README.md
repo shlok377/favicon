@@ -1,4 +1,4 @@
-# 🎨 Favicon & Social Asset Generator
+# 🎨 Favi — Favicon & Social Asset Generator
 
 > A developer-first, one-click generator for multi-resolution favicons, Apple touch icons, PWA manifests, Windows tiles, and WhatsApp / OpenGraph social preview cards.
 

@@ -4,34 +4,44 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        surface: {
-          50: '#f8f9fa',
-          100: '#f1f3f5',
-          200: '#e9ecef',
-          300: '#dee2e6',
-          400: '#ced4da',
-          500: '#adb5bd',
-          600: '#6c757d',
-          700: '#495057',
-          800: '#212529',
-          900: '#121212',
-          950: '#0a0a0a',
+        teal: {
+          bg: '#004643',
+          'bg-dark': '#003331',
+          box: '#d7f7f6',
+          'box-light': '#e9fbfb',
         },
-        primary: {
-          DEFAULT: '#2563eb',
-          hover: '#1d4ed8',
-          subtle: '#eff6ff',
-          darkSubtle: '#1e293b',
-        }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-      }
+      },
+      keyframes: {
+        slideInFromLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-60px) scale(0.96)' },
+          '100%': { opacity: '1', transform: 'translateX(0) scale(1)' },
+        },
+        slideInFromRight: {
+          '0%': { opacity: '0', transform: 'translateX(60px) scale(0.96)' },
+          '100%': { opacity: '1', transform: 'translateX(0) scale(1)' },
+        },
+        fadeInScale: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        slideUpFade: {
+          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'slide-in-left': 'slideInFromLeft 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-in-right': 'slideInFromRight 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-in-scale': 'fadeInScale 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-up-fade': 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+      },
     },
   },
   plugins: [],

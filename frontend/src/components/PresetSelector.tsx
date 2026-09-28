@@ -1,5 +1,6 @@
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { Check, CheckSquare, Square, Package, Sparkles, Filter } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export type PresetType = 'standard' | 'minimal' | 'custom';
 
@@ -28,228 +29,118 @@ export function PresetSelector({
     setCustomCategories((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const selectAllCategories = (select: boolean) => {
-    setCustomCategories({
-      standard_favicons: select,
-      apple_ios: select,
-      android_pwa: select,
-      windows_tiles: select,
-      social_cards: select,
-    });
+  const categories = [
+    { key: 'standard_favicons' as const, label: 'Favicons (.ico, png)' },
+    { key: 'apple_ios' as const, label: 'Apple Touch Icons' },
+    { key: 'android_pwa' as const, label: 'Android & PWA' },
+    { key: 'windows_tiles' as const, label: 'Windows Tiles' },
+    { key: 'social_cards' as const, label: 'Social Share Cards' },
+  ];
+
+  const presetsList: PresetType[] = ['standard', 'minimal', 'custom'];
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [sliderStyle, setSliderStyle] = useState<{ left: number; width: number; ready: boolean }>({
+    left: 0,
+    width: 0,
+    ready: false,
+  });
+
+  const updateSlider = () => {
+    const activeIdx = presetsList.indexOf(preset);
+    const activeEl = tabRefs.current[activeIdx];
+    if (activeEl) {
+      setSliderStyle({
+        left: activeEl.offsetLeft,
+        width: activeEl.offsetWidth,
+        ready: true,
+      });
+    }
   };
 
+  useLayoutEffect(() => {
+    updateSlider();
+  }, [preset]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateSlider);
+    return () => window.removeEventListener('resize', updateSlider);
+  }, [preset]);
+
   return (
-    <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-surface-600 dark:text-surface-300" />
-          <h3 className="font-semibold text-sm text-surface-900 dark:text-surface-50">
-            Output Bundle Preset
-          </h3>
-        </div>
-        <span className="text-xs text-surface-500 font-mono">
-          {preset === 'standard' ? 'Full Suite (16+ assets)' : preset === 'minimal' ? 'Essential (4 assets)' : 'Custom Selected'}
-        </span>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between mb-1">
+        <h4 className="font-bold text-base tracking-tight text-[#004643]">
+          Output Preset
+        </h4>
       </div>
 
-      {/* Preset Radio Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        {/* Standard Preset */}
-        <button
-          type="button"
-          onClick={() => setPreset('standard')}
-          className={`p-3.5 rounded-lg border text-left transition-all relative ${
-            preset === 'standard'
-              ? 'border-primary bg-primary-subtle dark:bg-primary-darkSubtle/40 ring-1 ring-primary'
-              : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700 bg-surface-50/50 dark:bg-surface-950/50'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-bold text-surface-900 dark:text-surface-100">
-                Standard
-              </span>
-            </div>
-            {preset === 'standard' && (
-              <div className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
-                <Check className="w-2.5 h-2.5" />
-              </div>
-            )}
-          </div>
-          <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed">
-            Complete modern suite: Favicons, Apple Touch, Android PWA, Windows Tiles, WhatsApp/Social Cards & Manifests.
-          </p>
-        </button>
+      {/* Segmented Pill Selector with Liquid Sliding Pill */}
+      <div className="relative grid grid-cols-3 p-1 rounded-2xl bg-white/80 border border-[#004643]/20">
+        {sliderStyle.ready && (
+          <div
+            className="absolute top-1 bottom-1 rounded-xl bg-[#004643] shadow-sm pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{
+              left: `${sliderStyle.left}px`,
+              width: `${sliderStyle.width}px`,
+            }}
+          />
+        )}
 
-        {/* Minimal Preset */}
-        <button
-          type="button"
-          onClick={() => setPreset('minimal')}
-          className={`p-3.5 rounded-lg border text-left transition-all relative ${
-            preset === 'minimal'
-              ? 'border-primary bg-primary-subtle dark:bg-primary-darkSubtle/40 ring-1 ring-primary'
-              : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700 bg-surface-50/50 dark:bg-surface-950/50'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold text-surface-900 dark:text-surface-100">
-              Minimal Essentials Only
-            </span>
-            {preset === 'minimal' && (
-              <div className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
-                <Check className="w-2.5 h-2.5" />
-              </div>
-            )}
-          </div>
-          <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed">
-            Lightweight pack: <code className="font-mono">favicon.ico</code>, <code className="font-mono">apple-touch-icon.png</code>, 16/32 PNGs and simple HTML.
-          </p>
-        </button>
-
-        {/* Custom Preset */}
-        <button
-          type="button"
-          onClick={() => setPreset('custom')}
-          className={`p-3.5 rounded-lg border text-left transition-all relative ${
-            preset === 'custom'
-              ? 'border-primary bg-primary-subtle dark:bg-primary-darkSubtle/40 ring-1 ring-primary'
-              : 'border-surface-200 dark:border-surface-800 hover:border-surface-300 dark:hover:border-surface-700 bg-surface-50/50 dark:bg-surface-950/50'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <Filter className="w-3.5 h-3.5 text-surface-600 dark:text-surface-300" />
-              <span className="text-xs font-bold text-surface-900 dark:text-surface-100">
-                Select Manually
-              </span>
-            </div>
-            {preset === 'custom' && (
-              <div className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
-                <Check className="w-2.5 h-2.5" />
-              </div>
-            )}
-          </div>
-          <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed">
-            Fine-grained checklist: choose specific target platforms and asset categories.
-          </p>
-        </button>
+        {presetsList.map((p, idx) => {
+          const isActive = preset === p;
+          return (
+            <button
+              key={p}
+              ref={(el) => {
+                tabRefs.current[idx] = el;
+              }}
+              type="button"
+              onClick={() => setPreset(p)}
+              className={`relative z-10 py-1.5 text-xs font-semibold rounded-xl capitalize transition-colors duration-200 select-none ${
+                isActive
+                  ? 'text-[#d7f7f6]'
+                  : 'text-[#004643]/70 hover:text-[#004643]'
+              }`}
+            >
+              {p}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Manual Selection Accordion */}
-      {preset === 'custom' && (
-        <div className="pt-3 border-t border-surface-200 dark:border-surface-800">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
-              Active Category Selection
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => selectAllCategories(true)}
-                className="text-[11px] text-primary hover:underline font-medium"
-              >
-                Select All
-              </button>
-              <span className="text-surface-300 dark:text-surface-700">•</span>
-              <button
-                type="button"
-                onClick={() => selectAllCategories(false)}
-                className="text-[11px] text-surface-500 hover:underline font-medium"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            <label
-              onClick={() => toggleCategory('standard_favicons')}
-              className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 cursor-pointer text-xs select-none"
-            >
-              {customCategories.standard_favicons ? (
-                <CheckSquare className="w-4 h-4 text-primary shrink-0" />
-              ) : (
-                <Square className="w-4 h-4 text-surface-400 shrink-0" />
-              )}
-              <div>
-                <span className="font-medium text-surface-900 dark:text-surface-100">
-                  Standard Favicons
-                </span>
-                <p className="text-[10px] text-surface-500 font-mono">.ico, 16x16, 32x32, 48x48</p>
-              </div>
-            </label>
-
-            <label
-              onClick={() => toggleCategory('apple_ios')}
-              className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 cursor-pointer text-xs select-none"
-            >
-              {customCategories.apple_ios ? (
-                <CheckSquare className="w-4 h-4 text-primary shrink-0" />
-              ) : (
-                <Square className="w-4 h-4 text-surface-400 shrink-0" />
-              )}
-              <div>
-                <span className="font-medium text-surface-900 dark:text-surface-100">
-                  Apple iOS & Safari
-                </span>
-                <p className="text-[10px] text-surface-500 font-mono">apple-touch-icon, pinned-tab.svg</p>
-              </div>
-            </label>
-
-            <label
-              onClick={() => toggleCategory('android_pwa')}
-              className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 cursor-pointer text-xs select-none"
-            >
-              {customCategories.android_pwa ? (
-                <CheckSquare className="w-4 h-4 text-primary shrink-0" />
-              ) : (
-                <Square className="w-4 h-4 text-surface-400 shrink-0" />
-              )}
-              <div>
-                <span className="font-medium text-surface-900 dark:text-surface-100">
-                  Android & PWA
-                </span>
-                <p className="text-[10px] text-surface-500 font-mono">192x192, 512x512, webmanifest</p>
-              </div>
-            </label>
-
-            <label
-              onClick={() => toggleCategory('windows_tiles')}
-              className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 cursor-pointer text-xs select-none"
-            >
-              {customCategories.windows_tiles ? (
-                <CheckSquare className="w-4 h-4 text-primary shrink-0" />
-              ) : (
-                <Square className="w-4 h-4 text-surface-400 shrink-0" />
-              )}
-              <div>
-                <span className="font-medium text-surface-900 dark:text-surface-100">
-                  Windows Microsoft Tiles
-                </span>
-                <p className="text-[10px] text-surface-500 font-mono">mstile-* & browserconfig.xml</p>
-              </div>
-            </label>
-
-            <label
-              onClick={() => toggleCategory('social_cards')}
-              className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 cursor-pointer text-xs select-none"
-            >
-              {customCategories.social_cards ? (
-                <CheckSquare className="w-4 h-4 text-primary shrink-0" />
-              ) : (
-                <Square className="w-4 h-4 text-surface-400 shrink-0" />
-              )}
-              <div>
-                <span className="font-medium text-surface-900 dark:text-surface-100">
-                  Social & WhatsApp Share Cards
-                </span>
-                <p className="text-[10px] text-surface-500 font-mono">og-image.png, twitter-image.png</p>
-              </div>
-            </label>
+      {/* Custom Category Accordion with Spring Transition */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          preset === 'custom'
+            ? 'grid-rows-[1fr] opacity-100 mt-2'
+            : 'grid-rows-[0fr] opacity-0 mt-0 pointer-events-none'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="pt-2 border-t border-[#004643]/15 flex flex-wrap gap-1.5">
+            {categories.map(({ key, label }) => {
+              const isSelected = customCategories[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleCategory(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
+                    isSelected
+                      ? 'bg-[#004643] text-[#d7f7f6] shadow-sm'
+                      : 'bg-white text-[#004643] border border-[#004643]/20 hover:border-[#004643]/50 hover:bg-[#d7f7f6]/40'
+                  }`}
+                >
+                  {isSelected && (
+                    <Check className="w-3 h-3 text-[#d7f7f6] animate-checkmark-pop shrink-0" />
+                  )}
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

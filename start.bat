@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ====================================================
-echo  Starting Favicon ^& Social Asset Generator
+echo  Starting Favi - Favicon ^& Social Asset Generator
 echo ====================================================
 
 :: Check Python
@@ -43,10 +43,10 @@ echo    - Frontend (Vite):   http://localhost:3737
 echo ====================================================
 
 :: Start backend in background window
-start "Favicon Backend (Port 1947)" cmd /k "cd backend && .venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 1947"
+start "Favi Backend (Port 1947)" cmd /k "cd backend && .venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 1947"
 
 :: Start frontend in background window
-start "Favicon Frontend (Port 3737)" cmd /k "cd frontend && npm run dev"
+start "Favi Frontend (Port 3737)" cmd /k "cd frontend && npm run dev"
 
 :: Wait for servers to spin up
 timeout /t 3 /nobreak >nul
