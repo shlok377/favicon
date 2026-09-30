@@ -5,7 +5,7 @@
   "scripts": {
     "start": "./start.sh",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 1947 --reload",
+    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 1937 --reload",
     "build:frontend": "cd frontend && npm run build",
     "test:backend": "cd backend && .venv/bin/pytest",
     "test": "npm run test:backend && npm run build:frontend"

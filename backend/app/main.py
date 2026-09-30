@@ -1,9 +1,13 @@
 """FastAPI entry point for the Favicon Generator backend."""
 
 import json
+import os
+from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.generator import (
@@ -38,7 +42,7 @@ async def health_check():
         "status": "healthy",
         "service": "favicon-generator-api",
         "version": "1.0.0",
-        "port": 1947,
+        "port": int(os.environ.get("FAVI_PORT", 1937)),
     }
 
 
@@ -138,3 +142,60 @@ async def generate_assets(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate favicon bundle: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Static File & Single-Page Application (SPA) Delivery
+# ---------------------------------------------------------------------------
+
+DEFAULT_DIST_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+FRONTEND_DIST_DIR = Path(os.environ.get("FRONTEND_DIST_DIR", DEFAULT_DIST_DIR))
+
+if not FRONTEND_DIST_DIR.exists():
+    cwd_dist = Path.cwd() / "frontend" / "dist"
+    if cwd_dist.exists():
+        FRONTEND_DIST_DIR = cwd_dist
+    elif (Path.cwd() / "dist").exists():
+        FRONTEND_DIST_DIR = Path.cwd() / "dist"
+
+if FRONTEND_DIST_DIR.exists() and (FRONTEND_DIST_DIR / "index.html").is_file():
+    assets_dir = FRONTEND_DIST_DIR / "assets"
+    if assets_dir.exists() and assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa_or_static(full_path: str):
+        # API requests must return 404 if not matched by earlier handlers
+        if full_path.startswith("api/") or full_path == "api":
+            raise HTTPException(status_code=404, detail="API route not found")
+
+        # Check if the requested path corresponds to a static file in dist
+        clean_path = full_path.lstrip("/")
+        if clean_path:
+            file_candidate = (FRONTEND_DIST_DIR / clean_path).resolve()
+            # Guard against directory traversal
+            try:
+                file_candidate.relative_to(FRONTEND_DIST_DIR.resolve())
+                if file_candidate.is_file():
+                    return FileResponse(file_candidate)
+            except ValueError:
+                raise HTTPException(status_code=403, detail="Forbidden")
+
+        # Missing assets inside assets/ must return 404, not fallback HTML
+        if clean_path.startswith("assets/"):
+            raise HTTPException(status_code=404, detail="Asset not found")
+
+        # Fallback to index.html for SPA client-side routing
+        index_file = FRONTEND_DIST_DIR / "index.html"
+        if index_file.is_file():
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Frontend index.html not found")
+else:
+    @app.get("/")
+    async def dev_mode_index():
+        return {
+            "message": "Favi backend running in dev mode. Frontend static build not found in frontend/dist. Run 'npm run dev' in frontend/ for development or 'npm run build' to bundle.",
+            "port": int(os.environ.get("FAVI_PORT", 1937)),
+            "docs_url": "/docs",
+        }
+

@@ -9,15 +9,22 @@ backend/tests/
 # Dependencies
 node_modules/
 frontend/node_modules/
-.venv/
+.venv
 backend/.venv/
 env/
 venv/
 
 # Build & bundle output
-dist/
-frontend/dist/
+/dist/
 build/
+dist-release/
+
+# Favi local runtime & logs
+.runtime/
+.favi.pid
+.favi.port
+.install_path
+logs/
 
 # Python cache & bytecode
 __pycache__/

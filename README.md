@@ -6,28 +6,39 @@ Inspired by [Favicomatic](https://favicomatic.com/) — designed with a minimal 
 
 ---
 
-## ⚡ Quick Start (One-Click Launch)
+## ⚡ Quick Start (Zero-Friction One-Line Setup)
 
-Clone or download the repo and double-click the startup script for your operating system:
-
-### 🪟 Windows
-Double click `start.bat` or run:
-```cmd
-start.bat
-```
+Install and run Favi in seconds without installing Python, Node.js, or Git:
 
 ### 🍎 macOS & 🐧 Linux
-Run:
+Run in your terminal:
 ```bash
-./start.sh
+curl -fsSL https://raw.githubusercontent.com/shlok377/favicon/master/install.sh | bash
 ```
 
-The script will automatically:
-1. Verify Python 3 & Node.js
-2. Create a local `.venv` and install backend dependencies
-3. Install frontend npm packages
-4. Launch the FastAPI backend on port `1947` and the Vite React frontend on port `3737`
-5. Open `http://localhost:3737` in your default browser!
+### 🪟 Windows (PowerShell)
+Run in PowerShell:
+```powershell
+irm https://raw.githubusercontent.com/shlok377/favicon/master/install.ps1 | iex
+```
+
+The installer will automatically:
+1. Stream and extract Favi into `~/Desktop/Favi`
+2. Provision an isolated, zero-sudo Python environment via `uv`
+3. Generate a native desktop shortcut with official Favi branding
+4. Launch Favi in a dedicated, borderless app window on **port `1937`**!
+
+---
+
+### 💻 Manual / Developer Quick Start
+If you already cloned the repository and want to run it locally:
+```bash
+./favi start          # Start background daemon & open app window
+./favi status         # Check server health & PID
+./favi stop           # Stop background server
+./favi logs           # View recent server logs
+```
+*(Windows users: run `favi.bat start`)*
 
 ---
 
@@ -85,9 +96,10 @@ favicons.zip/
 
 ## 🛠️ Tech Stack & Architecture
 
-- **Backend (Port 1947)**: Python FastAPI + Uvicorn + Pillow (PIL)
-- **Frontend (Port 3737)**: React 19 + TypeScript + Vite + Tailwind CSS + Lucide Icons
-- **Proxy**: Vite proxies `/api/*` directly to `http://localhost:1947`
+- **Unified Server (Port 1937)**: Python FastAPI + Uvicorn + Pillow (PIL), serving both the REST API and compiled frontend static assets.
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS + Lucide Icons.
+- **Runtime**: Zero-sudo portable runtime powered by Astral's `uv`.
+- **Desktop**: Borderless native window mode (`--app`) with cross-platform desktop shortcuts.
 
 ---
 
