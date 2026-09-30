@@ -11,7 +11,11 @@ ARCHIVE_NAME="favi-standalone"
 
 echo "🎨 Building Favi distribution bundle..."
 
-# 1. Build frontend static assets
+# 1. Sync installer scripts to frontend/public and build static assets
+echo "📦 Syncing installer scripts to frontend/public..."
+cp "$REPO_ROOT/install.sh" "$REPO_ROOT/frontend/public/" 2>/dev/null || true
+cp "$REPO_ROOT/install.ps1" "$REPO_ROOT/frontend/public/" 2>/dev/null || true
+
 echo "📦 Building frontend static assets with npm..."
 (cd "$REPO_ROOT/frontend" && npm run build)
 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Developer-first Favicon & Social Asset Generator for web projects.",
   "scripts": {
-    "start": "./start.sh",
+    "start": "./favi start",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 1937 --reload",
     "build:frontend": "cd frontend && npm run build",
