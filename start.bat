@@ -38,12 +38,12 @@ if not exist "frontend\node_modules\" (
 
 echo ====================================================
 echo  Launching Services:
-echo    - Backend (FastAPI): http://localhost:1947
+echo    - Backend (FastAPI): http://localhost:1937
 echo    - Frontend (Vite):   http://localhost:3737
 echo ====================================================
 
 :: Start backend in background window
-start "Favi Backend (Port 1947)" cmd /k "cd backend && .venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 1947"
+start "Favi Backend (Port 1937)" cmd /k "cd backend && .venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 1937"
 
 :: Start frontend in background window
 start "Favi Frontend (Port 3737)" cmd /k "cd frontend && npm run dev"

@@ -472,6 +472,9 @@ case "$ACTION" in
     setup-shortcuts|create-shortcuts)
         cmd_setup_shortcuts
         ;;
+    setup-runtime|ensure-runtime)
+        ensure_runtime
+        ;;
     help|--help|-h)
         echo "Usage: $0 {start|stop|restart|status|logs|run|setup-shortcuts} [options]"
         echo ""

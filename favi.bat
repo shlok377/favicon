@@ -116,5 +116,5 @@ set "FRONTEND_DIST_DIR=%APP_DIR%\frontend\dist"
 exit /b 0
 
 :cmd_shortcuts
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Desk = [Environment]::GetFolderPath('Desktop'); $Sc = $WshShell.CreateShortcut(\"$Desk\Favi.lnk\"); $Sc.TargetPath = \"%APP_DIR%\favi.bat\"; $Sc.WorkingDirectory = \"%APP_DIR%\"; $Sc.IconLocation = \"%APP_DIR%\frontend\dist\favicon.ico\"; $Sc.Save(); echo 'Created Desktop shortcut.'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Desk = [Environment]::GetFolderPath('Desktop'); $Sc = $WshShell.CreateShortcut(\"$Desk\Favi.lnk\"); $Sc.TargetPath = \"%APP_DIR%\favi.bat\"; $Sc.WorkingDirectory = \"%APP_DIR%\"; $Sc.IconLocation = \"%APP_DIR%\frontend\dist\favicon.ico\"; $Sc.Save(); $Start = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs\Favi.lnk'; $Sc2 = $WshShell.CreateShortcut($Start); $Sc2.TargetPath = \"%APP_DIR%\favi.bat\"; $Sc2.WorkingDirectory = \"%APP_DIR%\"; $Sc2.IconLocation = \"%APP_DIR%\frontend\dist\favicon.ico\"; $Sc2.Save(); echo 'Created Desktop and Start Menu shortcuts.'"
 exit /b 0

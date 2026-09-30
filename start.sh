@@ -39,7 +39,7 @@ fi
 
 echo "===================================================="
 echo "⚡ Launching Services:"
-echo "   - Backend (FastAPI): http://localhost:1947"
+echo "   - Backend (FastAPI): http://localhost:1937"
 echo "   - Frontend (Vite):   http://localhost:3737"
 echo "===================================================="
 
@@ -57,7 +57,7 @@ cleanup() {
         kill "$BACKEND_PID" 2>/dev/null || true
     fi
     # Also ensure port processes are stopped
-    fuser -k 1947/tcp 2>/dev/null || true
+    fuser -k 1937/tcp 2>/dev/null || true
     fuser -k 3737/tcp 2>/dev/null || true
     echo "✅ Done. Goodbye!"
     exit 0
@@ -68,7 +68,7 @@ trap cleanup INT TERM EXIT
 # Start Backend
 (
     cd "$BACKEND_DIR"
-    "$VENV_DIR/bin/uvicorn" app.main:app --host 0.0.0.0 --port 1947
+    "$VENV_DIR/bin/uvicorn" app.main:app --host 0.0.0.0 --port 1937
 ) &
 BACKEND_PID=$!
 

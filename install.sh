@@ -164,7 +164,7 @@ echo "  → Setting up virtual environment..." >> "$INSTALL_LOG"
 
 (
     cd "$INSTALL_DIR"
-    ./favi setup-shortcuts >> "$INSTALL_LOG" 2>&1 || true
+    ./favi setup-runtime >> "$INSTALL_LOG" 2>&1 || true
 )
 
 # ------------------------------------------------------------------------------
