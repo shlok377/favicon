@@ -106,21 +106,18 @@ export function Header({
   const isActionDisabled = currentStage === 1 ? !canContinue : currentStage === 3 ? isGenerating : false;
 
   return (
-    <header className="w-full pt-3 pb-2 px-4 flex items-center justify-center shrink-0">
+    <nav className="w-full pt-2 pb-1 sm:pb-2 px-4 flex items-center justify-center shrink-0">
       {/* Dynamic Island Capsule with Bouncy Fluid Resizing */}
       <div
         className={`flex items-center gap-2 sm:gap-3 bg-[#d7f7f6] px-3.5 py-1.5 rounded-full border border-[#004643]/20 shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           islandBumping ? 'animate-island-bounce' : ''
         }`}
       >
-        {/* 1. Brand Logo [FAVI] */}
-        <div className="flex items-center gap-2 pr-1 select-none cursor-pointer" title="Favi">
+        {/* 1. Brand Logo */}
+        <div className="flex items-center select-none cursor-pointer" title="Favi">
           <div className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm shrink-0 transition-transform duration-300 hover:rotate-12 hover:scale-110 active:scale-95 overflow-hidden border border-[#004643]/20 bg-white">
             <img src="/favi.png" alt="Favi Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-bold text-xs sm:text-sm tracking-tight text-[#004643]">
-            Favi
-          </span>
         </div>
 
         {/* Spacer / Divider */}
@@ -229,6 +226,6 @@ export function Header({
           </button>
         </div>
       </div>
-    </header>
+    </nav>
   );
 }

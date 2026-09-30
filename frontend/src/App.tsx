@@ -203,19 +203,6 @@ export default function App() {
 
   return (
     <div className="h-screen max-h-screen overflow-hidden bg-[#004643] text-[#004643] flex flex-col justify-between selection:bg-[#d7f7f6] selection:text-[#004643] transition-colors duration-300 p-3 sm:p-5">
-      {/* Dynamic Island Header with Integrated Stage Actions */}
-      <Header
-        currentStage={currentStage}
-        onSelectStage={(stage) => setCurrentStage(stage)}
-        maxUnlockedStage={maxUnlockedStage}
-        canContinue={Boolean(squareFile)}
-        onContinue={handleProceedToCustomize}
-        onCookNow={handleCookNow}
-        onDownload={handleDownloadZip}
-        isGenerating={isGenerating}
-        hasDownloaded={hasDownloaded}
-      />
-
       <main className="relative flex-1 min-h-0 w-full max-w-6xl mx-auto flex flex-col justify-center items-center overflow-hidden py-1">
         {/* Floating alerts dropping smoothly from Dynamic Island with spring bounce */}
         {errorMessage && (
@@ -299,6 +286,19 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Bottom Floating Island Navbar with Stage Actions */}
+      <Header
+        currentStage={currentStage}
+        onSelectStage={(stage) => setCurrentStage(stage)}
+        maxUnlockedStage={maxUnlockedStage}
+        canContinue={Boolean(squareFile)}
+        onContinue={handleProceedToCustomize}
+        onCookNow={handleCookNow}
+        onDownload={handleDownloadZip}
+        isGenerating={isGenerating}
+        hasDownloaded={hasDownloaded}
+      />
     </div>
   );
 }
