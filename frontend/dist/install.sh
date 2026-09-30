@@ -3,10 +3,7 @@
 # 🎨 Favi Installer — Zero-Friction One-Line Setup
 # ==============================================================================
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/shlok377/favicon/master/install.sh | bash
-#
-# Future hosting compatible:
-#   curl -fsSL https://www.use-favi.web.app/install.sh | bash
+#   curl -fsSL https://usefavi.web.app/install.sh | bash
 # ==============================================================================
 set -euo pipefail
 

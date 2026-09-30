@@ -6,21 +6,30 @@ Inspired by [Favicomatic](https://favicomatic.com/) — designed with a minimal 
 
 ---
 
-## ⚡ Quick Start (Zero-Friction One-Line Setup)
+## 🌐 Live Web App
 
-Install and run Favi in seconds without installing Python, Node.js, or Git:
+Use Favi instantly in your browser (no installation needed, 100% free and client-side):
+👉 **[usefavi.web.app](https://usefavi.web.app)**
+
+---
+
+## ⚡ Quick Start (Install Locally with 1 Command)
+
+Install and run Favi locally on your desktop without installing Python, Node.js, or Git:
 
 ### 🍎 macOS & 🐧 Linux
 Run in your terminal:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/shlok377/favicon/master/install.sh | bash
+curl -fsSL https://usefavi.web.app/install.sh | bash
 ```
 
 ### 🪟 Windows (PowerShell)
 Run in PowerShell:
 ```powershell
-irm https://raw.githubusercontent.com/shlok377/favicon/master/install.ps1 | iex
+irm https://usefavi.web.app/install.ps1 | iex
 ```
+
+*(GitHub raw mirrors are also available: `curl -fsSL https://raw.githubusercontent.com/shlok377/favicon/master/install.sh | bash`)*
 
 The installer will automatically:
 1. Stream and extract Favi into `~/Desktop/Favi`

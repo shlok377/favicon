@@ -40,3 +40,4 @@ htmlcov/
 *.local
 .DS_Store
 Thumbs.db
+.firebase/

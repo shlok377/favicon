@@ -6,6 +6,7 @@ import { MetadataPanel, type MetadataState } from './components/MetadataPanel';
 import { PresetSelector, type PresetType, type CustomCategoriesState } from './components/PresetSelector';
 import { LiveMockups } from './components/LiveMockups';
 import { EmbedCodeViewer } from './components/EmbedCodeViewer';
+import { generateFaviconBundleInBrowser } from './utils/clientGenerator';
 
 export default function App() {
   // Stage State
@@ -89,34 +90,50 @@ export default function App() {
 
     const promise = (async () => {
       try {
-        const formData = new FormData();
-        formData.append('square_image', squareFile);
-        if (horizontalFile) {
-          formData.append('horizontal_image', horizontalFile);
+        let blob: Blob | null = null;
+
+        // Try local backend API first (if running locally as a desktop app)
+        try {
+          const formData = new FormData();
+          formData.append('square_image', squareFile);
+          if (horizontalFile) {
+            formData.append('horizontal_image', horizontalFile);
+          }
+          formData.append('app_name', metadata.appName);
+          formData.append('short_name', metadata.shortName);
+          formData.append('theme_color', metadata.themeColor);
+          formData.append('background_color', metadata.backgroundColor);
+          formData.append('site_url', metadata.siteUrl);
+          formData.append('description', metadata.description);
+          formData.append('preset', preset);
+
+          if (preset === 'custom') {
+            formData.append('custom_categories_json', JSON.stringify(customCategories));
+          }
+
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) {
+            blob = await response.blob();
+          }
+        } catch {
+          // Local API unreachable (e.g. running hosted on web / Firebase)
         }
-        formData.append('app_name', metadata.appName);
-        formData.append('short_name', metadata.shortName);
-        formData.append('theme_color', metadata.themeColor);
-        formData.append('background_color', metadata.backgroundColor);
-        formData.append('site_url', metadata.siteUrl);
-        formData.append('description', metadata.description);
-        formData.append('preset', preset);
 
-        if (preset === 'custom') {
-          formData.append('custom_categories_json', JSON.stringify(customCategories));
+        // If local API didn't produce a blob, run client-side generator directly in browser
+        if (!blob) {
+          blob = await generateFaviconBundleInBrowser({
+            squareFile,
+            horizontalFile,
+            metadata,
+            preset,
+            customCategories,
+          });
         }
 
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({ detail: 'Generation failed' }));
-          throw new Error(errData.detail || 'Failed to generate favicons');
-        }
-
-        const blob = await response.blob();
         setCachedZipBlob(blob);
         return blob;
       } catch (err: any) {

@@ -1,7 +1,7 @@
 # ==============================================================================
 # 🎨 Favi Installer — Windows PowerShell One-Liner Setup
 # Usage:
-#   irm https://raw.githubusercontent.com/shlok377/favicon/master/install.ps1 | iex
+#   irm https://usefavi.web.app/install.ps1 | iex
 # ==============================================================================
 
 Write-Host "====================================================================" -ForegroundColor Blue
