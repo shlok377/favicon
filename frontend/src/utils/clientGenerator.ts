@@ -234,18 +234,25 @@ function renderResizedCanvas(
 
 function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Failed to export canvas to PNG blob'));
-        return;
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64 = dataUrl.split(',')[1];
+      const binaryString = atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(new Uint8Array(reader.result as ArrayBuffer));
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(blob);
-    }, 'image/png');
+      resolve(bytes);
+    } catch {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Failed to export canvas to PNG blob'));
+          return;
+        }
+        blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf))).catch(reject);
+      }, 'image/png');
+    }
   });
 }
 
@@ -828,6 +835,7 @@ export async function generateFaviconBundleInBrowser(
   // Generate and return compressed ZIP blob
   return await zip.generateAsync({
     type: 'blob',
+    mimeType: 'application/zip',
     compression: 'DEFLATE',
     compressionOptions: { level: 9 },
   });

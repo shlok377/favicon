@@ -92,38 +92,48 @@ export default function App() {
       try {
         let blob: Blob | null = null;
 
-        // Try local backend API first (if running locally as a desktop app)
-        try {
-          const formData = new FormData();
-          formData.append('square_image', squareFile);
-          if (horizontalFile) {
-            formData.append('horizontal_image', horizontalFile);
-          }
-          formData.append('app_name', metadata.appName);
-          formData.append('short_name', metadata.shortName);
-          formData.append('theme_color', metadata.themeColor);
-          formData.append('background_color', metadata.backgroundColor);
-          formData.append('site_url', metadata.siteUrl);
-          formData.append('description', metadata.description);
-          formData.append('preset', preset);
+        const isLocalHost =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' ||
+           window.location.hostname === '127.0.0.1' ||
+           window.location.port === '1937');
 
-          if (preset === 'custom') {
-            formData.append('custom_categories_json', JSON.stringify(customCategories));
-          }
+        // Only attempt local backend API if actually running locally in desktop daemon
+        if (isLocalHost) {
+          try {
+            const formData = new FormData();
+            formData.append('square_image', squareFile);
+            if (horizontalFile) {
+              formData.append('horizontal_image', horizontalFile);
+            }
+            formData.append('app_name', metadata.appName);
+            formData.append('short_name', metadata.shortName);
+            formData.append('theme_color', metadata.themeColor);
+            formData.append('background_color', metadata.backgroundColor);
+            formData.append('site_url', metadata.siteUrl);
+            formData.append('description', metadata.description);
+            formData.append('preset', preset);
 
-          const response = await fetch('/api/generate', {
-            method: 'POST',
-            body: formData,
-          });
+            if (preset === 'custom') {
+              formData.append('custom_categories_json', JSON.stringify(customCategories));
+            }
 
-          if (response.ok) {
-            blob = await response.blob();
+            const response = await fetch('/api/generate', {
+              method: 'POST',
+              body: formData,
+            });
+
+            const contentType = response.headers.get('content-type') || '';
+            // Ensure response is actually a zip archive and NOT an HTML SPA fallback page
+            if (response.ok && contentType.toLowerCase().includes('zip')) {
+              blob = await response.blob();
+            }
+          } catch {
+            // Local API unreachable
           }
-        } catch {
-          // Local API unreachable (e.g. running hosted on web / Firebase)
         }
 
-        // If local API didn't produce a blob, run client-side generator directly in browser
+        // When running on web (Firebase Hosting) or if local daemon is not running, generate directly in browser
         if (!blob) {
           blob = await generateFaviconBundleInBrowser({
             squareFile,
