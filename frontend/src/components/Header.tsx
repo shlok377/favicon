@@ -109,13 +109,13 @@ export function Header({
     <nav className="w-full pt-2 pb-1 sm:pb-2 px-4 flex items-center justify-center shrink-0">
       {/* Dynamic Island Capsule with Bouncy Fluid Resizing */}
       <div
-        className={`flex items-center gap-2 sm:gap-3 bg-[#d7f7f6] px-3.5 py-1.5 rounded-full border border-[#004643]/20 shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        className={`flex items-center gap-2 sm:gap-3 bg-[#d7f7f6] px-3.5 py-1.5 rounded-full border border-[#004643]/20 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[#004643]/35 hover:shadow-[0_20px_35px_-10px_rgba(0,43,41,0.25)] ${
           islandBumping ? 'animate-island-bounce' : ''
         }`}
       >
         {/* 1. Brand Logo */}
         <div className="flex items-center select-none cursor-pointer" title="Favi">
-          <div className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm shrink-0 transition-transform duration-300 hover:rotate-12 hover:scale-110 active:scale-95 overflow-hidden border border-[#004643]/20 bg-white">
+          <div className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:rotate-12 hover:scale-110 active:scale-95 overflow-hidden border border-[#004643]/20 bg-white">
             <img src="/favi.png" alt="Favi Logo" className="w-full h-full object-contain" />
           </div>
         </div>
@@ -128,7 +128,7 @@ export function Header({
           {/* Animated Liquid Background Pill */}
           {sliderStyle.ready && (
             <div
-              className="absolute top-0.5 bottom-0.5 rounded-full bg-[#004643] shadow-sm pointer-events-none transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+              className="absolute top-0.5 bottom-0.5 rounded-full bg-[#004643] shadow-sm pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
               style={{
                 left: `${sliderStyle.left}px`,
                 width: `${sliderStyle.width}px`,
@@ -148,11 +148,11 @@ export function Header({
                 type="button"
                 disabled={!isUnlocked}
                 onClick={() => isUnlocked && onSelectStage(step as 1 | 2 | 3)}
-                className={`relative z-10 h-7 px-3 rounded-full text-xs font-semibold transition-colors duration-200 select-none ${
+                className={`relative z-10 h-7 px-3 rounded-full text-xs font-semibold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
                   isActive
                     ? 'text-[#d7f7f6]'
                     : isUnlocked
-                    ? 'text-[#004643]/70 hover:text-[#004643] cursor-pointer hover:scale-105 active:scale-95'
+                    ? 'text-[#004643]/70 hover:text-[#004643] hover:bg-[#004643]/10 cursor-pointer hover:scale-105 active:scale-95'
                     : 'text-[#004643]/30 cursor-not-allowed'
                 }`}
               >
@@ -171,14 +171,14 @@ export function Header({
             type="button"
             disabled={isActionDisabled}
             onClick={handleActionClick}
-            className={`relative flex items-center justify-center h-7 px-3.5 sm:px-4 rounded-full text-xs font-bold shadow-sm transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)] select-none ${
+            className={`group relative flex items-center justify-center h-7 px-3.5 sm:px-4 rounded-full text-xs font-bold shadow-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
               isActionDisabled
                 ? currentStage === 3 && isGenerating
                   ? 'bg-[#004643]/85 text-[#d7f7f6] cursor-wait animate-cooking-pulse'
                   : 'bg-[#004643]/15 text-[#004643]/40 cursor-not-allowed'
                 : celebrating
                 ? 'bg-[#004643] text-[#d7f7f6] animate-celebrate-bounce cursor-pointer'
-                : 'bg-[#004643] hover:bg-[#003331] text-[#d7f7f6] cursor-pointer hover:scale-105 active:scale-95'
+                : 'bg-[#004643] hover:bg-[#003331] text-[#d7f7f6] cursor-pointer hover:scale-105 active:scale-95 hover:shadow-md'
             }`}
           >
             {/* Label Flip Container */}
@@ -190,14 +190,14 @@ export function Header({
                 {currentStage === 1 && (
                   <>
                     <span>Continue</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3 h-3 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5" />
                   </>
                 )}
 
                 {currentStage === 2 && (
                   <>
                     <span>Cook Now!</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3 h-3 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5" />
                   </>
                 )}
 
@@ -215,7 +215,7 @@ export function Header({
                       </>
                     ) : (
                       <>
-                        <Download className="w-3 h-3" />
+                        <Download className="w-3 h-3 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0.5" />
                         <span>{hasDownloaded ? 'Download Again' : 'Download!'}</span>
                       </>
                     )}
